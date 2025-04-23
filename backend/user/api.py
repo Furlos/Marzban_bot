@@ -12,6 +12,8 @@ async def create_user(
     username: str,
 ):
     return service.create(username)
+
+
 @user_router.post("/create")
 async def restart_sub(
     username: str,
