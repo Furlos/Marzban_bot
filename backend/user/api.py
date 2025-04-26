@@ -1,21 +1,34 @@
 from fastapi import APIRouter, Query
 from fastapi.responses import Response
-from service import UserService
 
-user_router = APIRouter(prefix="/user", tags=["Users"])
+from backend.user.schemas import UserCreate, UserUpdate
 
-service = UserService(username="что", password="what")
+from backend.settings.config import api_token, api_url
+from backend.user.user_service import UserService
 
+user_router = APIRouter(tags=["Users"], prefix="/users")
 
-@user_router.post("/create")
-async def create_user(
-    username: str,
-):
-    return service.create(username)
+marzban = UserService(api_url=api_url, api_token=api_token)
 
 
-@user_router.post("/create")
-async def restart_sub(
-    username: str,
-):
-    return service.restart_sub(username)
+@user_router.post("/")
+async def create_user(user: UserCreate):
+    return marzban.create_user(
+        telegram_id=user.username,
+        expire_days=user.expire_days,
+        limit_traffic_gb=user.data_limit_gb,
+    )
+
+
+@user_router.put("/{user_id}")
+async def update_user(username: str, update: UserUpdate):
+    return marzban.update_user(
+        telegram_id=username,
+        limit_traffic_gb=update.traffic_gb,
+        expire_days=update.expire_days,
+    )
+
+
+@user_router.get("/{user_id}")
+async def get_user(username: str):
+    return marzban.get_user(telegram_id=username)
