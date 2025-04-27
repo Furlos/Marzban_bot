@@ -49,13 +49,41 @@ import asyncio
 import aiohttp
 import json
 
+import aiohttp
+import json
+
 
 async def get_user_by_username(username):
     url = f"http://localhost:3000/users/(user_id?username={username}"
 
-    async with aiohttp.ClientSession() as session:
-        async with session.get(url, headers={"accept": "application/json"}) as response:
-            return await response.json()
+    try:
+        async with aiohttp.ClientSession() as session:
+            async with session.get(url, headers={"accept": "application/json"}) as response:
+                if response.status != 200:
+                    return {
+                        "error": f"API error: {response.status}",
+                        "status": response.status
+                    }
+
+                try:
+                    data = await response.json()
+                    return {
+                        "status": 200,
+                        "data": data,
+                        "error": None
+                    }
+                except json.JSONDecodeError:
+                    return {
+                        "status": 500,
+                        "error": "Invalid JSON response",
+                        "data": None
+                    }
+    except Exception as e:
+        return {
+            "status": 500,
+            "error": str(e),
+            "data": None
+        }
 import aiohttp
 import asyncio
 

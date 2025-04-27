@@ -6,13 +6,22 @@ instruction_router = Router()
 
 @instruction_router.callback_query(lambda c: c.data == "instruction")
 async def show_instruction(callback: types.CallbackQuery):
-    # Получаем данные пользователя
-    user_data = await get_user_by_username(str(callback.from_user.id))
-    username = user_data["username"]
-    password = f"vpn{callback.from_user.id}"
+    try:
+        # Получаем данные пользователя
+        api_response = await get_user_by_username(str(callback.from_user.id))
 
-    # Форматируем красивую инструкцию
-    instruction = """
+        # Проверяем успешность запроса
+        if not api_response or api_response.get("status") != 200:
+            await callback.answer("❌ Не удалось получить данные подключения", show_alert=True)
+            return
+
+        data = api_response.get("data", {})
+
+        # Используем connection_link если есть, иначе username
+        connection_link = data.get("connection_link", data.get("connection_file", data.get("username", "Конфигурация недоступна")))
+
+        # Форматируем красивую инструкцию
+        instruction = """
 🎯 <b>Полная инструкция по подключению VPN</b>
 
 1️⃣ <b>Скачайте приложение</b> для вашего устройства:
@@ -28,45 +37,29 @@ async def show_instruction(callback: types.CallbackQuery):
    4. Готово! Ваш VPN активен 🚀
 """
 
-    # Отправляем инструкцию
-    await callback.message.answer(
-        instruction,
-        parse_mode="HTML",
-        disable_web_page_preview=True
-    )
+        # Отправляем инструкцию
+        await callback.message.answer(
+            instruction,
+            parse_mode="HTML",
+            disable_web_page_preview=True
+        )
 
-    # Отправляем данные для копирования в отдельном сообщении
-    credentials = f"""
+        # Отправляем данные для копирования в отдельном сообщении
+        credentials = f"""
 🔐 <b>Ваши данные для подключения:</b>
 
-<code>┌───────────────────────┐
-│ Логин: {username:<15} │
-│ Пароль: {password:<14} │
-└───────────────────────┘</code>
+<code>{connection_link}</code>
 
 Просто нажмите на сообщение, чтобы скопировать!
 """
 
-    await callback.message.answer(
-        credentials,
-        parse_mode="HTML"
-    )
+        await callback.message.answer(
+            credentials,
+            parse_mode="HTML"
+        )
 
-    # Кнопка "Я скопировал"
-    builder = InlineKeyboardBuilder()
-    builder.button(text="✅ Я скопировал данные", callback_data="copied")
-
-    await callback.message.answer(
-        "Нажмите кнопку ниже после копирования:",
-        reply_markup=builder.as_markup()
-    )
+    except Exception as e:
+        print(f"Error in show_instruction: {e}")
+        await callback.answer("⚠️ Произошла ошибка при получении инструкции", show_alert=True)
 
     await callback.answer()
-
-@instruction_router.callback_query(lambda c: c.data == "copied")
-async def confirm_copy(callback: types.CallbackQuery):
-    await callback.answer(
-        "Отлично! Теперь вы можете подключиться к VPN",
-        show_alert=True
-    )
-    await callback.message.delete()  # Удаляем кнопку после нажатия

@@ -9,7 +9,6 @@
       <change beforePath="$PROJECT_DIR$/telegram_bot/src/handlers/api_requests.py" beforeDir="false" afterPath="$PROJECT_DIR$/telegram_bot/src/handlers/api_requests.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/telegram_bot/src/handlers/instruction.py" beforeDir="false" afterPath="$PROJECT_DIR$/telegram_bot/src/handlers/instruction.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/telegram_bot/src/handlers/profile.py" beforeDir="false" afterPath="$PROJECT_DIR$/telegram_bot/src/handlers/profile.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/telegram_bot/src/handlers/start.py" beforeDir="false" afterPath="$PROJECT_DIR$/telegram_bot/src/handlers/start.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -129,6 +128,7 @@
     <recent_temporary>
       <list>
         <item itemvalue="Python.main" />
+        <item itemvalue="Python.main" />
       </list>
     </recent_temporary>
   </component>
@@ -228,7 +228,15 @@
       <option name="project" value="LOCAL" />
       <updated>1745776308864</updated>
     </task>
-    <option name="localTasksCounter" value="11" />
+    <task id="LOCAL-00011" summary="Создание первоначальной структуры">
+      <option name="closed" value="true" />
+      <created>1745779497722</created>
+      <option name="number" value="00011" />
+      <option name="presentableId" value="LOCAL-00011" />
+      <option name="project" value="LOCAL" />
+      <updated>1745779497722</updated>
+    </task>
+    <option name="localTasksCounter" value="12" />
     <servers />
   </component>
   <component name="VcsManagerConfiguration">

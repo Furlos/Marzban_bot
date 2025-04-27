@@ -17,13 +17,13 @@ async def generate_profile_message(user: types.User):
     api_response = await get_user_by_username(str(user_id))
 
     # Проверяем успешность запроса
-    if not api_response or api_response.get("status") != 200 or "data" not in api_response:
-        error_msg = api_response.get("error", "Неизвестная ошибка") if api_response else "Нет ответа от сервера"
-        return f"❌ Ошибка получения данных профиля: {error_msg}", None
+    if not api_response or api_response.get("status") != 200:
+        error_msg = api_response.get("error", "Unknown error") if api_response else "No response"
+        return f"❌ Ошибка получения данных: {error_msg}", None
 
-    data = api_response["data"]
+    data = api_response.get("data", {})
 
-    # Проверяем наличие всех необходимых полей
+    # Проверяем наличие обязательных полей
     required_fields = ["used_traffic_gb", "data_limit_gb", "expire_date"]
     if not all(field in data for field in required_fields):
         return "❌ В данных профиля отсутствуют необходимые поля", None
@@ -67,6 +67,8 @@ async def generate_profile_message(user: types.User):
         print(f"Error processing profile data: {e}")
         return "❌ Ошибка обработки данных профиля", None
 
+
+# ... остальные обработчики остаются без изменений ...
 
 @profile_router.callback_query(lambda c: c.data == "profile")
 async def process_profile(callback: types.CallbackQuery):
