@@ -29,7 +29,7 @@ class UserService:
         )
 
     async def _make_request(
-        self, method: str, endpoint: str, data: Optional[Dict] = None
+            self, method: str, endpoint: str, data: Optional[Dict] = None
     ) -> Dict:
         """
         Асинхронный метод для выполнения запросов к API
@@ -58,7 +58,7 @@ class UserService:
             raise MarzbanAPIError(f"Неожиданная ошибка: {str(e)}")
 
     def _generate_ss_link(
-        self, method: str, password: str, server: str, port: int, username: str
+            self, method: str, password: str, server: str, port: int, username: str
     ) -> str:
         """
         Генерация ссылки для подключения Shadowsocks
@@ -75,7 +75,7 @@ class UserService:
         return f"ss://{ss_config_encoded}#{username}"
 
     async def create_user(
-        self, telegram_id: str, limit_traffic_gb: float, expire_days: int
+            self, telegram_id: str, limit_traffic_gb: float, expire_days: int
     ) -> Dict[str, Any]:
         """
         Асинхронно создает нового пользователя VPN
@@ -119,10 +119,10 @@ class UserService:
         }
 
     async def update_user(
-        self,
-        telegram_id: str,
-        limit_traffic_gb: Optional[float] = None,
-        expire_days: Optional[int] = None,
+            self,
+            telegram_id: str,
+            limit_traffic_gb: Optional[float] = None,
+            expire_days: Optional[int] = None,
     ) -> Dict[str, Any]:
         """
         Асинхронно обновляет данные пользователя VPN
@@ -161,7 +161,7 @@ class UserService:
                     "%Y-%m-%d"
                 ),
                 "data_limit_gb": (
-                    updated_user["data_limit"] / (1024**3)
+                    updated_user["data_limit"] / (1024 ** 3)
                     if updated_user["data_limit"]
                     else 0
                 ),
@@ -173,7 +173,7 @@ class UserService:
                 "%Y-%m-%d"
             ),
             "data_limit_gb": (
-                current_user["data_limit"] / (1024**3)
+                current_user["data_limit"] / (1024 ** 3)
                 if current_user["data_limit"]
                 else 0
             ),
@@ -184,20 +184,32 @@ class UserService:
         Асинхронно получает информацию о пользователе
         """
         user_data = await self._make_request("GET", f"/api/user/{telegram_id}")
+
+        # Генерация connection_link аналогично методу create_user
+        ss_config = user_data.get("proxies", {}).get("shadowsocks", {})
+        server = ss_config.get("server") or self.api_url.split("//")[-1].split("/")[0]
+
         return {
             "username": user_data["username"],
             "expire_date": datetime.fromtimestamp(user_data["expire"]).strftime(
                 "%Y-%m-%d"
             ),
             "data_limit_gb": (
-                user_data["data_limit"] / (1024**3) if user_data["data_limit"] else 0
+                user_data["data_limit"] / (1024 ** 3) if user_data["data_limit"] else 0
             ),
             "used_traffic_gb": (
-                user_data["used_traffic"] / (1024**3)
+                user_data["used_traffic"] / (1024 ** 3)
                 if user_data["used_traffic"]
                 else 0
             ),
             "status": user_data["status"],
+            "connection_link": self._generate_ss_link(
+                method=ss_config.get("method", "chacha20-ietf-poly1305"),
+                password=ss_config.get("password", ""),
+                server=server,
+                port=ss_config.get("port", 443),
+                username=user_data.get("username", ""),
+            ),
         }
 
     async def close(self):
