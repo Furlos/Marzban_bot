@@ -1,5 +1,4 @@
 import os
 from dotenv import load_dotenv
-
 load_dotenv()
-url = os.getenv("API_URL")
+token = os.getenv("BOT_TOKEN")
