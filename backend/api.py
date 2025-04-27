@@ -20,7 +20,7 @@ async def create_user(user: UserCreate):
 
 @user_router.put("/{user_id}")
 async def update_user(username: str, update: UserUpdate):
-    return marzban.update_user(
+    return await marzban.update_user(
         telegram_id=username,
         limit_traffic_gb=update.traffic_gb,
         expire_days=update.expire_days,
@@ -29,4 +29,4 @@ async def update_user(username: str, update: UserUpdate):
 
 @user_router.get("/{user_id}")
 async def get_user(username: str):
-    return marzban.get_user(telegram_id=username)
+    return await marzban.get_user(telegram_id=username)
