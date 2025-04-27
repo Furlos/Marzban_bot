@@ -41,4 +41,59 @@ async def create_user(username, expire_days, data_limit_gb):
                 print(response_text)
                 print(f"Status code: {response.status}")
 
-asyncio.run(create_user("cool123", 12, 12))
+
+
+import aiohttp
+import asyncio
+
+import aiohttp
+import json
+
+
+async def get_user_by_username(username):
+    url = f"http://localhost:3000/users/(user_id?username={username}"
+
+    async with aiohttp.ClientSession() as session:
+        async with session.get(url, headers={"accept": "application/json"}) as response:
+            return await response.json()
+import aiohttp
+import asyncio
+
+
+async def update_user(username, traffic_gb, copire_keys, reset_image):
+    url = f"http://localhost:3000/users/(user_id)?username={username}"
+
+    payload = {
+        "traffic_gr": traffic_gb,
+        "copire_keys": copire_keys,
+        "reset_image": reset_image
+    }
+
+    headers = {
+        "Content-Type": "application/json",
+        "accept": "application/json",
+        "execute": "true"  # Добавляем заголовок execute как в примере curl
+    }
+
+    async with aiohttp.ClientSession() as session:
+        async with session.put(url, json=payload, headers=headers) as response:
+            print(f"Request URL: {url}")
+            print(f"Status code: {response.status}")
+
+            try:
+                response_data = await response.json()
+                print("Response data:")
+                print(response_data)
+            except Exception as e:
+                print(f"Could not parse JSON: {e}")
+                print("Raw response:")
+                print(await response.text())
+
+
+# Пример использования
+#asyncio.run(update_user(
+    ##    username="cool123",
+#    traffic_gb=10,
+ #   copire_keys=30,
+ #   reset_image=False
+#))

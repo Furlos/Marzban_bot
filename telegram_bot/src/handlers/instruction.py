@@ -1,60 +1,72 @@
 from aiogram import Router, types
+from aiogram.utils.keyboard import InlineKeyboardBuilder
+from telegram_bot.src.handlers.api_requests import get_user_by_username
 
 instruction_router = Router()
 
 @instruction_router.callback_query(lambda c: c.data == "instruction")
-async def process_instruction(callback: types.CallbackQuery):
-    """
-    Обрабатывает запрос на отправку инструкции по подключению.
-    """
-    # Конфигурационные данные
-    ss_config = "ss://Y2hhY2hhMjAtaWV0Zi1wb2x5MTMwNTphTWZfWklnS2NaODhpX1BQRFJvMWZn@147.45.68.227:1080#%F0%9F%9A%80%20Marz%20%28PREMIUM%29%20%5BShadowsocks%20-%20tcp%5D"
+async def show_instruction(callback: types.CallbackQuery):
+    # Получаем данные пользователя
+    user_data = await get_user_by_username(str(callback.from_user.id))
+    username = user_data["username"]
+    password = f"vpn{callback.from_user.id}"
 
-    # Форматируем сообщение с инструкцией
-    instruction_text = (
-        "🚀 <b>Инструкция по подключению:</b>\n\n"
-        "1. Скачайте приложение:\n"
-        "👉 <a href='https://play.google.com/store/apps/details?id=org.outline.android.client'>Outline для Android</a>\n"
-        "👉 <a href='https://apps.apple.com/us/app/outline-app/id1356177741'>Outline для iOS</a>\n"
-        "👉 <a href='https://outline-vpn.com/download.php?os=c_windows'>Outline для Windows</a>\n"
-        "👉 <a href='https://outline-vpn.com/download.php?os=c_macos'>Outline для Mac</a>\n\n"
-        "🔑 <b>Ваши параметры подключения:</b>\n"
-        "Скопируйте конфигурационный код и вставьте в приложение.\n\n"
-        "3. Нажмите 'Подключиться' в приложении\n\n"
-        "💡 <b>Подсказка:</b>\n"
-        "Нажмите на сообщение с кодом, чтобы скопировать его."
-    )
+    # Форматируем красивую инструкцию
+    instruction = """
+🎯 <b>Полная инструкция по подключению VPN</b>
 
-    # Отправляем основное сообщение с инструкцией
+1️⃣ <b>Скачайте приложение</b> для вашего устройства:
+   • <a href="https://apps.apple.com/us/app/outline-app/id1356177741">iOS (iPhone/iPad)</a>
+   • <a href="https://play.google.com/store/apps/details?id=org.outline.android.client">Android</a>
+   • <a href="https://outline-vpn.com/download.php?os=c_windows">Windows</a>
+   • <a href="https://outline-vpn.com/download.php?os=c_macos">Mac</a>
+
+3️⃣ <b>Как подключиться:</b>
+   1. Откройте приложение Outline
+   2. Нажмите "Добавить сервер"
+   3. Введите данные из следующего сообщения
+   4. Готово! Ваш VPN активен 🚀
+"""
+
+    # Отправляем инструкцию
     await callback.message.answer(
-        instruction_text,
+        instruction,
         parse_mode="HTML",
         disable_web_page_preview=True
     )
 
-    # Отправляем конфигурационный код отдельным сообщением
+    # Отправляем данные для копирования в отдельном сообщении
+    credentials = f"""
+🔐 <b>Ваши данные для подключения:</b>
+
+<code>┌───────────────────────┐
+│ Логин: {username:<15} │
+│ Пароль: {password:<14} │
+└───────────────────────┘</code>
+
+Просто нажмите на сообщение, чтобы скопировать!
+"""
+
     await callback.message.answer(
-        f"📋 <b>Ваш конфигурационный код:</b>\n\n<code>{ss_config}</code>",
+        credentials,
         parse_mode="HTML"
     )
 
-    # Добавляем кнопку для перехода в профиль
-    profile_keyboard = types.InlineKeyboardMarkup(inline_keyboard=[
-        [types.InlineKeyboardButton(text="👤 Перейти в профиль", callback_data="profile")]
-    ])
+    # Кнопка "Я скопировал"
+    builder = InlineKeyboardBuilder()
+    builder.button(text="✅ Я скопировал данные", callback_data="copied")
+
     await callback.message.answer(
-        "Если вы хотите посмотреть ваш профиль, нажмите на кнопку ниже:",
-        reply_markup=profile_keyboard
+        "Нажмите кнопку ниже после копирования:",
+        reply_markup=builder.as_markup()
     )
 
     await callback.answer()
 
-@instruction_router.callback_query(lambda c: c.data == "copy_config")
-async def copy_config(callback: types.CallbackQuery):
-    """
-    Уведомляет пользователя о том, как скопировать конфигурационный код.
-    """
+@instruction_router.callback_query(lambda c: c.data == "copied")
+async def confirm_copy(callback: types.CallbackQuery):
     await callback.answer(
-        "Конфигурационный код уже отправлен в сообщении. Просто нажмите на него, чтобы скопировать!",
+        "Отлично! Теперь вы можете подключиться к VPN",
         show_alert=True
     )
+    await callback.message.delete()  # Удаляем кнопку после нажатия

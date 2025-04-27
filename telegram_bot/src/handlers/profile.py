@@ -1,8 +1,10 @@
 from aiogram import Router, types
 from aiogram.filters import Command
-from datetime import datetime, timedelta
+from datetime import datetime
+from telegram_bot.src.handlers.api_requests import get_user_by_username
 
 profile_router = Router()
+
 
 async def generate_profile_message(user: types.User):
     """
@@ -11,37 +13,60 @@ async def generate_profile_message(user: types.User):
     user_id = user.id
     username = user.username or "не указан"
 
-    # Заглушки данных (в реальном боте нужно получать из БД)
-    traffic_used = 3.2  # GB
-    traffic_limit = 10  # GB
-    traffic_left = traffic_limit - traffic_used
-    subscription_end = datetime.now() + timedelta(days=7)  # +7 дней от текущей даты
+    # Получаем данные от API
+    api_response = await get_user_by_username(str(user_id))
 
-    # Форматируем сообщение
-    profile_text = (
-        f"👤 <b>Ваш профиль</b>\n\n"
-        f"🆔 ID: <code>{user_id}</code>\n"
-        f"📛 Username: @{username}\n\n"
-        f"📊 <b>Трафик:</b>\n"
-        f"• Использовано: {traffic_used:.1f} GB\n"
-        f"• Лимит: {traffic_limit} GB\n"
-        f"• Осталось: {traffic_left:.1f} GB\n\n"
-        f"⏳ <b>Подписка активна до:</b>\n"
-        f"{subscription_end.strftime('%d.%m.%Y %H:%M')}"
-    )
+    # Проверяем успешность запроса
+    if not api_response or api_response.get("status") != 200 or "data" not in api_response:
+        error_msg = api_response.get("error", "Неизвестная ошибка") if api_response else "Нет ответа от сервера"
+        return f"❌ Ошибка получения данных профиля: {error_msg}", None
 
-    # Создаем клавиатуру
-    keyboard = types.InlineKeyboardMarkup(inline_keyboard=[
-        [
-            types.InlineKeyboardButton(text="🔄 Обновить", callback_data="refresh_profile"),
-            types.InlineKeyboardButton(text="💰 Купить подписку", callback_data="pay")
-        ],
-        [
-            types.InlineKeyboardButton(text="📖 Инструкция", callback_data="instruction")
-        ]
-    ])
+    data = api_response["data"]
 
-    return profile_text, keyboard
+    # Проверяем наличие всех необходимых полей
+    required_fields = ["used_traffic_gb", "data_limit_gb", "expire_date"]
+    if not all(field in data for field in required_fields):
+        return "❌ В данных профиля отсутствуют необходимые поля", None
+
+    try:
+        # Получаем и преобразуем данные
+        traffic_used = float(data["used_traffic_gb"])
+        traffic_limit = float(data["data_limit_gb"])
+        traffic_left = traffic_limit - traffic_used
+
+        # Преобразуем строку даты в объект datetime
+        expire_date = datetime.strptime(data["expire_date"], "%Y-%m-%d")
+
+        # Форматируем сообщение
+        profile_text = (
+            f"👤 <b>Ваш профиль</b>\n\n"
+            f"🆔 ID: <code>{user_id}</code>\n"
+            f"📛 Username: @{username}\n\n"
+            f"📊 <b>Трафик:</b>\n"
+            f"• Использовано: {traffic_used:.1f} GB\n"
+            f"• Лимит: {traffic_limit} GB\n"
+            f"• Осталось: {traffic_left:.1f} GB\n\n"
+            f"⏳ <b>Подписка активна до:</b>\n"
+            f"{expire_date.strftime('%d.%m.%Y')}"
+        )
+
+        # Создаем клавиатуру
+        keyboard = types.InlineKeyboardMarkup(inline_keyboard=[
+            [
+                types.InlineKeyboardButton(text="🔄 Обновить", callback_data="refresh_profile"),
+                types.InlineKeyboardButton(text="💰 Купить подписку", callback_data="pay")
+            ],
+            [
+                types.InlineKeyboardButton(text="📖 Инструкция", callback_data="instruction")
+            ]
+        ])
+
+        return profile_text, keyboard
+
+    except (ValueError, KeyError) as e:
+        print(f"Error processing profile data: {e}")
+        return "❌ Ошибка обработки данных профиля", None
+
 
 @profile_router.callback_query(lambda c: c.data == "profile")
 async def process_profile(callback: types.CallbackQuery):
