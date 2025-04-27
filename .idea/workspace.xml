@@ -4,14 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="2fb98ba0-7f1a-4705-a194-f6b7a8a989d1" name="Changes" comment="Создание первоначальной структуры">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/telegram_bot/src/handlers/config/config.py" beforeDir="false" afterPath="$PROJECT_DIR$/telegram_bot/src/handlers/config.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/telegram_bot/src/handlers/profile.py" beforeDir="false" afterPath="$PROJECT_DIR$/telegram_bot/src/handlers/profile.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/telegram_bot/src/handlers/purchase.py" beforeDir="false" afterPath="$PROJECT_DIR$/telegram_bot/src/handlers/purchase.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/telegram_bot/src/handlers/start.py" beforeDir="false" afterPath="$PROJECT_DIR$/telegram_bot/src/handlers/start.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/telegram_bot/src/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/telegram_bot/src/main.py" afterDir="false" />
-    </list>
+    <list default="true" id="2fb98ba0-7f1a-4705-a194-f6b7a8a989d1" name="Changes" comment="Создание первоначальной структуры" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -61,8 +54,10 @@
   </component>
   <component name="PropertiesComponent">{
   &quot;keyToString&quot;: {
+    &quot;Python.config.executor&quot;: &quot;Run&quot;,
     &quot;Python.handlers.executor&quot;: &quot;Run&quot;,
     &quot;Python.main.executor&quot;: &quot;Run&quot;,
+    &quot;Python.start.executor&quot;: &quot;Run&quot;,
     &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
     &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
     &quot;git-widget-placeholder&quot;: &quot;frontend&quot;,
@@ -72,6 +67,7 @@
 }</component>
   <component name="RecentsManager">
     <key name="MoveFile.RECENT_KEYS">
+      <recent name="C:\Users\levpr\PycharmProjects\Marzban_bot\telegram_bot\src\handlers\utils" />
       <recent name="C:\Users\levpr\PycharmProjects\Marzban_bot\telegram_bot\src\handlers" />
       <recent name="C:\Users\levpr\Marzban_bot\telegram_bot\src" />
     </key>
@@ -157,7 +153,23 @@
       <option name="project" value="LOCAL" />
       <updated>1745748571634</updated>
     </task>
-    <option name="localTasksCounter" value="6" />
+    <task id="LOCAL-00006" summary="Создание первоначальной структуры">
+      <option name="closed" value="true" />
+      <created>1745751617135</created>
+      <option name="number" value="00006" />
+      <option name="presentableId" value="LOCAL-00006" />
+      <option name="project" value="LOCAL" />
+      <updated>1745751617135</updated>
+    </task>
+    <task id="LOCAL-00007" summary="Создание первоначальной структуры">
+      <option name="closed" value="true" />
+      <created>1745770961506</created>
+      <option name="number" value="00007" />
+      <option name="presentableId" value="LOCAL-00007" />
+      <option name="project" value="LOCAL" />
+      <updated>1745770961506</updated>
+    </task>
+    <option name="localTasksCounter" value="8" />
     <servers />
   </component>
   <component name="VcsManagerConfiguration">
