@@ -1,11 +1,6 @@
-from fastapi import FastAPI
-import uvicorn
-
-from backend.user.api import user_router
-
-app = FastAPI()
-app.include_router(user_router)
+def main():
+    print("Hello from marzban-bot!")
 
 
 if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=3000)
+    main()

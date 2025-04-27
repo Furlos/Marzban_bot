@@ -1,10 +1,8 @@
-from fastapi import APIRouter, Query
-from fastapi.responses import Response
+from fastapi import APIRouter
+from schemas import UserCreate, UserUpdate
 
-from backend.user.schemas import UserCreate, UserUpdate
-
-from backend.settings.config import api_token, api_url
-from backend.user.user_service import UserService
+from config import api_token, api_url
+from user_service import UserService
 
 user_router = APIRouter(tags=["Users"], prefix="/users")
 
