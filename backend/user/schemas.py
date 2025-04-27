@@ -13,4 +13,4 @@ class UserCreate(BaseModel):
 class UserUpdate(BaseModel):
     traffic_gb: Optional[int] = None
     expire_days: Optional[int] = None
-    reset_usage: bool = False
+    reset_usage: bool = False  # Всегда Тру, в этом нет смысла
