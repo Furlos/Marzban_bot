@@ -18,7 +18,7 @@ class UserService:
         :param api_url: URL API Marzban (например, 'https://vpn.example.com/api')
         :param api_token: API Token администратора Marzban
         """
-        self.api_url = api_url.rstrip("/")
+        self.api_url = api_url
         self.api_token = api_token
         self.client = httpx.AsyncClient(
             headers={

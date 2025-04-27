@@ -11,7 +11,7 @@ marzban = UserService(api_url=api_url, api_token=api_token)
 
 @user_router.post("/")
 async def create_user(user: UserCreate):
-    return marzban.create_user(
+    return await marzban.create_user(
         telegram_id=user.username,
         expire_days=user.expire_days,
         limit_traffic_gb=user.data_limit_gb,
