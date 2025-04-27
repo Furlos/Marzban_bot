@@ -4,6 +4,7 @@ from aiogram.types import LabeledPrice, PreCheckoutQuery
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 import asyncio
 
+from telegram_bot.src.handlers.api_requests import update_user
 from telegram_bot.src.handlers.instruction import instruction_router
 
 purchase_router = Router()
@@ -82,7 +83,7 @@ async def success_payment(message: types.Message):
     # Создаем клавиатуру с кнопкой инструкции
     builder = InlineKeyboardBuilder()
     builder.button(text="📚 Инструкция", callback_data="instruction")
-
+    await update_user(f"{message.from_user.id}", 100,30,True)
     await message.answer(
         f"✅ Оплачено {sub_data['months']} мес!\n"
         "Нажмите кнопку ниже для получения инструкции:",

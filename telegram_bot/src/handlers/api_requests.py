@@ -88,13 +88,13 @@ import aiohttp
 import asyncio
 
 
-async def update_user(username, traffic_gb, copire_keys, reset_image):
+async def update_user(username, traffic_gb, expire_days, reset_usage):
     url = f"http://localhost:3000/users/(user_id)?username={username}"
 
     payload = {
-        "traffic_gr": traffic_gb,
-        "copire_keys": copire_keys,
-        "reset_image": reset_image
+        "traffic_gb": traffic_gb,
+        "expire_days": expire_days,
+        "reset_usage": reset_usage
     }
 
     headers = {
