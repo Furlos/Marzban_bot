@@ -1,11 +1,11 @@
-from aiogram import Bot, Dispatcher, types, F, Router
-from aiogram.filters import Command
+from aiogram import types, F, Router
+
 from aiogram.types import LabeledPrice, PreCheckoutQuery
 from aiogram.utils.keyboard import InlineKeyboardBuilder
-import asyncio
 
-from telegram_bot.src.handlers.api_requests import update_user
-from telegram_bot.src.handlers.instruction import instruction_router
+
+from .api_requests import update_user
+
 
 purchase_router = Router()
 
