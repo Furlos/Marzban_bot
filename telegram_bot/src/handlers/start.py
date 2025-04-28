@@ -1,7 +1,7 @@
 from aiogram import Router, types
 from aiogram.filters import Command
 
-from telegram_bot.src.handlers.api_requests import create_user, get_user_by_username
+from .api_requests import create_user, get_user_by_username
 
 start_router = Router()
 
@@ -19,12 +19,12 @@ async def cmd_start(message: types.Message):
         # Вызываем create_user без asyncio.run()
 
         await message.answer(
-            "Привет! Я бот для покупки доступа к VPN!\nВам доступен пробный период, для его подключения перейдите в инструкцию",
+            "╔═══════════════════════╗\n   🚀 *ПРИВЕТ, ПУТЕШЕСТВЕННИК!* \n               🌐 *Instant-Paris VPN *\n      ⚡ *Пробный период активен!*  \n          📜 Перейдите в инструкцию  \n╚═══════════════════════╝  ",
             reply_markup=keyboard
         )
     # Отправляем сообщение и сохраняем его ID
     else:
         await message.answer(
-        "Привет! Я бот для покупки доступа к VPN!",
+        "╔═══════════════════════╗ \n   🚀 *ПРИВЕТ, ПУТЕШЕСТВЕННИК!*\n          ТВОЙ VPN — ТВОЯ СВОБОДА!\n ╚═══════════════════════╝  ",
         reply_markup=keyboard
     )

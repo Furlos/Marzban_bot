@@ -11,10 +11,10 @@ purchase_router = Router()
 
 # Конфигурация подписок
 SUBSCRIPTIONS = {
-    "1": {"months": 1, "price": 1, "label": "1 месяц - 1⭐"},  # цена в звездах
-    "3": {"months": 3, "price": 2, "label": "3 месяца - 2⭐"},
-    "6": {"months": 6, "price": 3, "label": "6 месяцев - 3⭐"},
-    "12": {"months": 12, "price": 4, "label": "12 месяцев - 4⭐"}
+    "1": {"months": 1, "price": 150, "label": "1 месяц - 150⭐"},  # цена в звездах
+    "3": {"months": 3, "price": 350, "label": "3 месяца - 350⭐"},
+    "6": {"months": 6, "price": 750, "label": "6 месяцев - 750⭐"},
+    "12": {"months": 12, "price": 1000, "label": "12 месяцев - 1000⭐"}
 }
 
 def payment_keyboard():
@@ -83,7 +83,8 @@ async def success_payment(message: types.Message):
     # Создаем клавиатуру с кнопкой инструкции
     builder = InlineKeyboardBuilder()
     builder.button(text="📚 Инструкция", callback_data="instruction")
-    await update_user(f"{message.from_user.id}", 100,30,True)
+    days = sub_data["months"]*30
+    await update_user(f"{message.from_user.id}", 100,days,True)
     await message.answer(
         f"✅ Оплачено {sub_data['months']} мес!\n"
         "Нажмите кнопку ниже для получения инструкции:",
