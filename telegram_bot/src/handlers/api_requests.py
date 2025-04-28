@@ -37,9 +37,10 @@ async def create_user(username, expire_days, data_limit_gb):
 
             except json.JSONDecodeError:
                 # Если не JSON, выводим как есть
-                print("Server returned non-JSON response:")
                 print(response_text)
                 print(f"Status code: {response.status}")
+                return "Server returned non-JSON response"
+
 
 
 
