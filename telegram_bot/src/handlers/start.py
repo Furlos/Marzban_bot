@@ -1,7 +1,7 @@
 from aiogram import Router, types
 from aiogram.filters import Command
 
-from api_requests import create_user, get_user_by_username
+from .api_requests import create_user, get_user_by_username
 
 start_router = Router()
 
