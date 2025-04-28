@@ -6,6 +6,7 @@ instruction_router = Router()
 
 @instruction_router.callback_query(lambda c: c.data == "instruction")
 async def show_instruction(callback: types.CallbackQuery):
+
     try:
         api_response = await get_user_by_username(str(callback.from_user.id))
         data = api_response.get("data", {})
@@ -30,7 +31,7 @@ async def show_instruction(callback: types.CallbackQuery):
         await callback.message.answer(
             instruction,
             parse_mode="HTML",
-            disable_web_page_preview=True
+            disable_web_page_preview=True,
         )
 
         credentials = f"""
@@ -43,7 +44,12 @@ async def show_instruction(callback: types.CallbackQuery):
 
         await callback.message.answer(
             credentials,
-            parse_mode="HTML"
+            parse_mode="HTML",
+            reply_markup=types.InlineKeyboardMarkup(inline_keyboard=[
+                [
+                    types.InlineKeyboardButton(text="👤Профиль", callback_data="profile"),
+                ]
+            ])
         )
 
     except Exception as e:
