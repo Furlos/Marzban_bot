@@ -1,0 +1,328 @@
+Index: telegram_bot/src/handlers/purchase.py
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>from aiogram import Router, types\r\nfrom aiogram.filters import Command\r\n\r\npurchase_router = Router()\r\n\r\n@purchase_router.callback_query(lambda c: c.data == \"pay\")\r\nasync def process_pay(callback: types.CallbackQuery):\r\n    # Создаем клавиатуру с вариантами подписки\r\n    keyboard = types.InlineKeyboardMarkup(inline_keyboard=[\r\n        [\r\n            types.InlineKeyboardButton(text=\"1 месяц - 1$\", callback_data=\"sub_1\"),\r\n            types.InlineKeyboardButton(text=\"3 месяца - 2$\", callback_data=\"sub_3\")\r\n        ],\r\n        [\r\n            types.InlineKeyboardButton(text=\"6 месяцев - 3$\", callback_data=\"sub_6\"),\r\n            types.InlineKeyboardButton(text=\"12 месяцев - 4$\", callback_data=\"sub_12\")\r\n        ]\r\n    ])\r\n\r\n    await callback.message.answer(\r\n        \"Вы можете оплатить VPN. Выберите один из вариантов подписки:\",\r\n        reply_markup=keyboard\r\n    )\r\n\r\n    # Подтверждаем обработку callback, чтобы убрать \"часики\" у кнопки\r\n    await callback.answer()\r\n\r\n# Обработчики для выбора подписки\r\n@purchase_router.callback_query(lambda c: c.data.startswith(\"sub_\"))\r\nasync def process_subscription(callback: types.CallbackQuery):\r\n    months = callback.data.split(\"_\")[1]  # Получаем количество месяцев из callback_data\r\n    prices = {\"1\": \"1$\", \"3\": \"2$\", \"6\": \"3$\", \"12\": \"4$\"}\r\n\r\n    await callback.message.answer(\r\n        f\"Вы выбрали подписку на {months} месяц(ев) за {prices[months]}. \"\r\n        \"Теперь вам нужно произвести оплату.\"\r\n    )\r\n\r\n    # Здесь можно добавить логику для обработки оплаты\r\n    # Например, отправить счет или перенаправить на платежный шлюз\r\n\r\n    await callback.answer()
+===================================================================
+diff --git a/telegram_bot/src/handlers/purchase.py b/telegram_bot/src/handlers/purchase.py
+--- a/telegram_bot/src/handlers/purchase.py	(revision c488a5d63dede2ed4a57eabf405a215c03829f91)
++++ b/telegram_bot/src/handlers/purchase.py	(date 1745753814028)
+@@ -1,10 +1,12 @@
+ from aiogram import Router, types
+-from aiogram.filters import Command
+ 
+ purchase_router = Router()
+ 
+ @purchase_router.callback_query(lambda c: c.data == "pay")
+ async def process_pay(callback: types.CallbackQuery):
++    """
++    Обрабатывает запрос на выбор подписки.
++    """
+     # Создаем клавиатуру с вариантами подписки
+     keyboard = types.InlineKeyboardMarkup(inline_keyboard=[
+         [
+@@ -17,6 +19,7 @@
+         ]
+     ])
+ 
++    # Отправляем сообщение с выбором подписки
+     await callback.message.answer(
+         "Вы можете оплатить VPN. Выберите один из вариантов подписки:",
+         reply_markup=keyboard
+@@ -25,12 +28,15 @@
+     # Подтверждаем обработку callback, чтобы убрать "часики" у кнопки
+     await callback.answer()
+ 
+-# Обработчики для выбора подписки
+ @purchase_router.callback_query(lambda c: c.data.startswith("sub_"))
+ async def process_subscription(callback: types.CallbackQuery):
++    """
++    Обрабатывает выбор подписки.
++    """
+     months = callback.data.split("_")[1]  # Получаем количество месяцев из callback_data
+     prices = {"1": "1$", "3": "2$", "6": "3$", "12": "4$"}
+ 
++    # Отправляем сообщение с подтверждением выбранной подписки
+     await callback.message.answer(
+         f"Вы выбрали подписку на {months} месяц(ев) за {prices[months]}. "
+         "Теперь вам нужно произвести оплату."
+Index: telegram_bot/src/handlers/start.py
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>from aiogram import Router, types\r\nfrom aiogram.filters import Command\r\n\r\nstart_router = Router()\r\n\r\n@start_router.message(Command(\"start\"))\r\nasync def cmd_start(message: types.Message):\r\n    # Создаем инлайн-клавиатуру с callback-кнопками\r\n    keyboard = types.InlineKeyboardMarkup(inline_keyboard=[\r\n        [\r\n            types.InlineKeyboardButton(text=\"Profile\", callback_data=\"profile\"),\r\n            types.InlineKeyboardButton(text=\"Pay\", callback_data=\"pay\"),\r\n            types.InlineKeyboardButton(text=\"Instruction\", callback_data=\"instruction\")\r\n        ]\r\n    ])\r\n\r\n    await message.answer(\r\n        \"Привет! Я бот для покупки доступа к VPN!\",\r\n        reply_markup=keyboard\r\n    )\r\n\r\n
+===================================================================
+diff --git a/telegram_bot/src/handlers/start.py b/telegram_bot/src/handlers/start.py
+--- a/telegram_bot/src/handlers/start.py	(revision c488a5d63dede2ed4a57eabf405a215c03829f91)
++++ b/telegram_bot/src/handlers/start.py	(date 1745753953524)
+@@ -5,6 +5,9 @@
+ 
+ @start_router.message(Command("start"))
+ async def cmd_start(message: types.Message):
++    bot = message.bot
++    chat_id = message.chat.id
++
+     # Создаем инлайн-клавиатуру с callback-кнопками
+     keyboard = types.InlineKeyboardMarkup(inline_keyboard=[
+         [
+@@ -14,8 +17,8 @@
+         ]
+     ])
+ 
+-    await message.answer(
++    # Отправляем сообщение и сохраняем его ID
++    sent_message = await message.answer(
+         "Привет! Я бот для покупки доступа к VPN!",
+         reply_markup=keyboard
+-    )
+-
++    )
+\ No newline at end of file
+Index: telegram_bot/src/handlers/instruction.py
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>from aiogram import Router, types\r\nfrom aiogram.filters import Command\r\nfrom aiogram.utils.formatting import (\r\n    Bold, TextLink, as_list, as_marked_section\r\n)\r\n\r\ninstruction_router = Router()\r\n\r\n@instruction_router.callback_query(lambda c: c.data == \"instruction\")\r\nasync def process_instruction(callback: types.CallbackQuery):\r\n    # Конфигурационные данные\r\n    ss_config = \"ss://Y2hhY2hhMjAtaWV0Zi1wb2x5MTMwNTphTWZfWklnS2NaODhpX1BQRFJvMWZn@147.45.68.227:1080#%F0%9F%9A%80%20Marz%20%28PREMIUM%29%20%5BShadowsocks%20-%20tcp%5D\"\r\n\r\n    # Форматируем сообщение с интерактивными ссылками\r\n    message = as_list(\r\n        as_marked_section(\r\n            Bold(\"\uD83D\uDE80 Инструкция по подключению:\"),\r\n            \"1. Скачайте приложение:\",\r\n            TextLink(\"Outline для Android\", url=\"https://play.google.com/store/apps/details?id=org.outline.android.client\"),\r\n            TextLink(\"Outline для iOS\", url=\"https://apps.apple.com/us/app/outline-app/id1356177741\"),\r\n            TextLink(\"Outline для Windows\", url=\"https://outline-vpn.com/download.php?os=c_windows\"),\r\n            TextLink(\"Outline для Mac\", url=\"https://outline-vpn.com/download.php?os=c_macos\"),\r\n            marker=\"\uD83D\uDC49 \"\r\n        ),\r\n        \"\\n\",\r\n        as_marked_section(\r\n            Bold(\"\uD83D\uDD11 Ваши параметры подключения:\"),\r\n            \"Скопируйте конфигурационный код и вставьте в приложение\",\r\n            marker=\"• \"\r\n        ),\r\n        f\"\\n\",\r\n        \"3. Нажмите 'Подключиться' в приложении\",\r\n        \"\\n\",\r\n        Bold(\"\uD83D\uDCA1 Подсказка: \"),\r\n        \"Нажмите на сообщение с кодом, чтобы скопировать его\",\r\n    )\r\n\r\n    # Отправляем основное сообщение\r\n    await callback.message.answer(\r\n        **message.as_kwargs(),\r\n        disable_web_page_preview=True\r\n    )\r\n\r\n    # Отправляем конфиг отдельным сообщением для удобного копирования\r\n    await callback.message.answer(\r\n        f\"\uD83D\uDCCB Ваш конфигурационный код:\\n\\n<code>{ss_config}</code>\",\r\n        parse_mode=\"HTML\"\r\n    )\r\n\r\n    await callback.answer()\r\n\r\n@instruction_router.callback_query(lambda c: c.data == \"copy_config\")\r\nasync def copy_config(callback: types.CallbackQuery):\r\n    await callback.answer(\r\n        \"Конфигурационный код уже отправлен в сообщении. Просто нажмите на него, чтобы скопировать!\",\r\n        show_alert=True\r\n    )
+===================================================================
+diff --git a/telegram_bot/src/handlers/instruction.py b/telegram_bot/src/handlers/instruction.py
+--- a/telegram_bot/src/handlers/instruction.py	(revision c488a5d63dede2ed4a57eabf405a215c03829f91)
++++ b/telegram_bot/src/handlers/instruction.py	(date 1745754202798)
+@@ -1,56 +1,59 @@
+ from aiogram import Router, types
+-from aiogram.filters import Command
+-from aiogram.utils.formatting import (
+-    Bold, TextLink, as_list, as_marked_section
+-)
+ 
+ instruction_router = Router()
+ 
+ @instruction_router.callback_query(lambda c: c.data == "instruction")
+ async def process_instruction(callback: types.CallbackQuery):
++    """
++    Обрабатывает запрос на отправку инструкции по подключению.
++    """
+     # Конфигурационные данные
+     ss_config = "ss://Y2hhY2hhMjAtaWV0Zi1wb2x5MTMwNTphTWZfWklnS2NaODhpX1BQRFJvMWZn@147.45.68.227:1080#%F0%9F%9A%80%20Marz%20%28PREMIUM%29%20%5BShadowsocks%20-%20tcp%5D"
+ 
+-    # Форматируем сообщение с интерактивными ссылками
+-    message = as_list(
+-        as_marked_section(
+-            Bold("🚀 Инструкция по подключению:"),
+-            "1. Скачайте приложение:",
+-            TextLink("Outline для Android", url="https://play.google.com/store/apps/details?id=org.outline.android.client"),
+-            TextLink("Outline для iOS", url="https://apps.apple.com/us/app/outline-app/id1356177741"),
+-            TextLink("Outline для Windows", url="https://outline-vpn.com/download.php?os=c_windows"),
+-            TextLink("Outline для Mac", url="https://outline-vpn.com/download.php?os=c_macos"),
+-            marker="👉 "
+-        ),
+-        "\n",
+-        as_marked_section(
+-            Bold("🔑 Ваши параметры подключения:"),
+-            "Скопируйте конфигурационный код и вставьте в приложение",
+-            marker="• "
+-        ),
+-        f"\n",
+-        "3. Нажмите 'Подключиться' в приложении",
+-        "\n",
+-        Bold("💡 Подсказка: "),
+-        "Нажмите на сообщение с кодом, чтобы скопировать его",
++    # Форматируем сообщение с инструкцией
++    instruction_text = (
++        "🚀 <b>Инструкция по подключению:</b>\n\n"
++        "1. Скачайте приложение:\n"
++        "👉 <a href='https://play.google.com/store/apps/details?id=org.outline.android.client'>Outline для Android</a>\n"
++        "👉 <a href='https://apps.apple.com/us/app/outline-app/id1356177741'>Outline для iOS</a>\n"
++        "👉 <a href='https://outline-vpn.com/download.php?os=c_windows'>Outline для Windows</a>\n"
++        "👉 <a href='https://outline-vpn.com/download.php?os=c_macos'>Outline для Mac</a>\n\n"
++        "🔑 <b>Ваши параметры подключения:</b>\n"
++        "Скопируйте конфигурационный код и вставьте в приложение.\n\n"
++        "3. Нажмите 'Подключиться' в приложении\n\n"
++        "💡 <b>Подсказка:</b>\n"
++        "Нажмите на сообщение с кодом, чтобы скопировать его."
+     )
+ 
+-    # Отправляем основное сообщение
++    # Отправляем основное сообщение с инструкцией
+     await callback.message.answer(
+-        **message.as_kwargs(),
++        instruction_text,
++        parse_mode="HTML",
+         disable_web_page_preview=True
+     )
+ 
+-    # Отправляем конфиг отдельным сообщением для удобного копирования
++    # Отправляем конфигурационный код отдельным сообщением
+     await callback.message.answer(
+-        f"📋 Ваш конфигурационный код:\n\n<code>{ss_config}</code>",
++        f"📋 <b>Ваш конфигурационный код:</b>\n\n<code>{ss_config}</code>",
+         parse_mode="HTML"
+     )
+ 
++    # Добавляем кнопку для перехода в профиль
++    profile_keyboard = types.InlineKeyboardMarkup(inline_keyboard=[
++        [types.InlineKeyboardButton(text="👤 Перейти в профиль", callback_data="profile")]
++    ])
++    await callback.message.answer(
++        "Если вы хотите посмотреть ваш профиль, нажмите на кнопку ниже:",
++        reply_markup=profile_keyboard
++    )
++
+     await callback.answer()
+ 
+ @instruction_router.callback_query(lambda c: c.data == "copy_config")
+ async def copy_config(callback: types.CallbackQuery):
++    """
++    Уведомляет пользователя о том, как скопировать конфигурационный код.
++    """
+     await callback.answer(
+         "Конфигурационный код уже отправлен в сообщении. Просто нажмите на него, чтобы скопировать!",
+         show_alert=True
+Index: telegram_bot/src/handlers/profile.py
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>from aiogram import Router, types\r\nfrom aiogram.filters import Command\r\n\r\nprofile_router = Router()\r\n# Обработчики для callback-кнопок\r\n@profile_router.callback_query(lambda c: c.data == \"profile\")\r\nasync def process_profile(callback: types.CallbackQuery):\r\n    await callback.message.answer(\"Вы выбрали Profile\")\r\n
+===================================================================
+diff --git a/telegram_bot/src/handlers/profile.py b/telegram_bot/src/handlers/profile.py
+--- a/telegram_bot/src/handlers/profile.py	(revision c488a5d63dede2ed4a57eabf405a215c03829f91)
++++ b/telegram_bot/src/handlers/profile.py	(date 1745754078615)
+@@ -1,8 +1,83 @@
+ from aiogram import Router, types
+ from aiogram.filters import Command
++from datetime import datetime, timedelta
+ 
+ profile_router = Router()
+-# Обработчики для callback-кнопок
++
++async def generate_profile_message(user: types.User):
++    """
++    Генерирует текст и клавиатуру для профиля пользователя.
++    """
++    user_id = user.id
++    username = user.username or "не указан"
++
++    # Заглушки данных (в реальном боте нужно получать из БД)
++    traffic_used = 3.2  # GB
++    traffic_limit = 10  # GB
++    traffic_left = traffic_limit - traffic_used
++    subscription_end = datetime.now() + timedelta(days=7)  # +7 дней от текущей даты
++
++    # Форматируем сообщение
++    profile_text = (
++        f"👤 <b>Ваш профиль</b>\n\n"
++        f"🆔 ID: <code>{user_id}</code>\n"
++        f"📛 Username: @{username}\n\n"
++        f"📊 <b>Трафик:</b>\n"
++        f"• Использовано: {traffic_used:.1f} GB\n"
++        f"• Лимит: {traffic_limit} GB\n"
++        f"• Осталось: {traffic_left:.1f} GB\n\n"
++        f"⏳ <b>Подписка активна до:</b>\n"
++        f"{subscription_end.strftime('%d.%m.%Y %H:%M')}"
++    )
++
++    # Создаем клавиатуру
++    keyboard = types.InlineKeyboardMarkup(inline_keyboard=[
++        [
++            types.InlineKeyboardButton(text="🔄 Обновить", callback_data="refresh_profile"),
++            types.InlineKeyboardButton(text="💰 Купить подписку", callback_data="pay")
++        ],
++        [
++            types.InlineKeyboardButton(text="📖 Инструкция", callback_data="instruction")
++        ]
++    ])
++
++    return profile_text, keyboard
++
+ @profile_router.callback_query(lambda c: c.data == "profile")
+ async def process_profile(callback: types.CallbackQuery):
+-    await callback.message.answer("Вы выбрали Profile")
++    """
++    Обрабатывает запрос на просмотр профиля пользователя.
++    """
++    profile_text, keyboard = await generate_profile_message(callback.from_user)
++    await callback.message.answer(
++        profile_text,
++        reply_markup=keyboard,
++        parse_mode="HTML"
++    )
++    await callback.answer()
++
++@profile_router.callback_query(lambda c: c.data == "refresh_profile")
++async def refresh_profile(callback: types.CallbackQuery):
++    """
++    Обновляет данные профиля пользователя.
++    """
++    profile_text, keyboard = await generate_profile_message(callback.from_user)
++    await callback.message.answer(
++        profile_text,
++        reply_markup=keyboard,
++        parse_mode="HTML"
++    )
++    await callback.answer("Данные обновлены! ✅", show_alert=False)
++
++@profile_router.message(Command("start"))  # Исправлено: используется фильтр Command
++async def process_start(message: types.Message):
++    """
++    Обрабатывает команду /start и отправляет приветственное сообщение.
++    """
++    keyboard = types.InlineKeyboardMarkup(inline_keyboard=[
++        [types.InlineKeyboardButton(text="Перейти в профиль", callback_data="profile")]
++    ])
++    await message.answer(
++        "Добро пожаловать! Нажмите кнопку ниже, чтобы перейти в свой профиль.",
++        reply_markup=keyboard
++    )
+\ No newline at end of file
+Index: .idea/workspace.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+><?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n<project version=\"4\">\r\n  <component name=\"AutoImportSettings\">\r\n    <option name=\"autoReloadType\" value=\"SELECTIVE\" />\r\n  </component>\r\n  <component name=\"ChangeListManager\">\r\n    <list default=\"true\" id=\"2fb98ba0-7f1a-4705-a194-f6b7a8a989d1\" name=\"Changes\" comment=\"Создание первоначальной структуры\">\r\n      <change beforePath=\"$PROJECT_DIR$/.idea/workspace.xml\" beforeDir=\"false\" afterPath=\"$PROJECT_DIR$/.idea/workspace.xml\" afterDir=\"false\" />\r\n      <change beforePath=\"$PROJECT_DIR$/telegram_bot/src/handlers/config/config.py\" beforeDir=\"false\" afterPath=\"$PROJECT_DIR$/telegram_bot/src/handlers/config.py\" afterDir=\"false\" />\r\n      <change beforePath=\"$PROJECT_DIR$/telegram_bot/src/handlers/profile.py\" beforeDir=\"false\" afterPath=\"$PROJECT_DIR$/telegram_bot/src/handlers/profile.py\" afterDir=\"false\" />\r\n      <change beforePath=\"$PROJECT_DIR$/telegram_bot/src/handlers/purchase.py\" beforeDir=\"false\" afterPath=\"$PROJECT_DIR$/telegram_bot/src/handlers/purchase.py\" afterDir=\"false\" />\r\n      <change beforePath=\"$PROJECT_DIR$/telegram_bot/src/handlers/start.py\" beforeDir=\"false\" afterPath=\"$PROJECT_DIR$/telegram_bot/src/handlers/start.py\" afterDir=\"false\" />\r\n      <change beforePath=\"$PROJECT_DIR$/telegram_bot/src/main.py\" beforeDir=\"false\" afterPath=\"$PROJECT_DIR$/telegram_bot/src/main.py\" afterDir=\"false\" />\r\n    </list>\r\n    <option name=\"SHOW_DIALOG\" value=\"false\" />\r\n    <option name=\"HIGHLIGHT_CONFLICTS\" value=\"true\" />\r\n    <option name=\"HIGHLIGHT_NON_ACTIVE_CHANGELIST\" value=\"false\" />\r\n    <option name=\"LAST_RESOLUTION\" value=\"IGNORE\" />\r\n  </component>\r\n  <component name=\"FileTemplateManagerImpl\">\r\n    <option name=\"RECENT_TEMPLATES\">\r\n      <list>\r\n        <option value=\"Dockerfile\" />\r\n        <option value=\"Python Script\" />\r\n      </list>\r\n    </option>\r\n  </component>\r\n  <component name=\"Git.Settings\">\r\n    <option name=\"RECENT_BRANCH_BY_REPOSITORY\">\r\n      <map>\r\n        <entry key=\"$PROJECT_DIR$\" value=\"backend\" />\r\n      </map>\r\n    </option>\r\n    <option name=\"RECENT_GIT_ROOT_PATH\" value=\"$PROJECT_DIR$\" />\r\n  </component>\r\n  <component name=\"GitHubPullRequestSearchHistory\">{\r\n  &quot;lastFilter&quot;: {\r\n    &quot;state&quot;: &quot;OPEN&quot;,\r\n    &quot;assignee&quot;: &quot;Furlos&quot;\r\n  }\r\n}</component>\r\n  <component name=\"GithubPullRequestsUISettings\">{\r\n  &quot;selectedUrlAndAccountId&quot;: {\r\n    &quot;url&quot;: &quot;https://github.com/Furlos/Marzban_bot.git&quot;,\r\n    &quot;accountId&quot;: &quot;3126f5b4-89ac-47a6-a3d4-43c2b3726418&quot;\r\n  }\r\n}</component>\r\n  <component name=\"HighlightingSettingsPerFile\">\r\n    <setting file=\"file://$PROJECT_DIR$/telegram_bot/src/handlers/handlers.py\" root0=\"FORCE_HIGHLIGHTING\" />\r\n  </component>\r\n  <component name=\"ProjectColorInfo\">{\r\n  &quot;associatedIndex&quot;: 7\r\n}</component>\r\n  <component name=\"ProjectId\" id=\"2w7c2vwKCzwaD5OMt6cjIwEnqaK\" />\r\n  <component name=\"ProjectLevelVcsManager\" settingsEditedManually=\"true\">\r\n    <ConfirmationsSetting value=\"1\" id=\"Add\" />\r\n  </component>\r\n  <component name=\"ProjectViewState\">\r\n    <option name=\"hideEmptyMiddlePackages\" value=\"true\" />\r\n    <option name=\"showLibraryContents\" value=\"true\" />\r\n  </component>\r\n  <component name=\"PropertiesComponent\">{\r\n  &quot;keyToString&quot;: {\r\n    &quot;Python.handlers.executor&quot;: &quot;Run&quot;,\r\n    &quot;Python.main.executor&quot;: &quot;Run&quot;,\r\n    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,\r\n    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,\r\n    &quot;git-widget-placeholder&quot;: &quot;frontend&quot;,\r\n    &quot;last_opened_file_path&quot;: &quot;C:/Users/levpr/PycharmProjects/Marzban_bot&quot;,\r\n    &quot;settings.editor.selected.configurable&quot;: &quot;com.jetbrains.python.black.configuration.BlackFormatterConfigurable&quot;\r\n  }\r\n}</component>\r\n  <component name=\"RecentsManager\">\r\n    <key name=\"MoveFile.RECENT_KEYS\">\r\n      <recent name=\"C:\\Users\\levpr\\PycharmProjects\\Marzban_bot\\telegram_bot\\src\\handlers\" />\r\n      <recent name=\"C:\\Users\\levpr\\Marzban_bot\\telegram_bot\\src\" />\r\n    </key>\r\n  </component>\r\n  <component name=\"RunManager\">\r\n    <configuration name=\"handlers\" type=\"PythonConfigurationType\" factoryName=\"Python\" nameIsGenerated=\"true\">\r\n      <module name=\"Marzban_bot\" />\r\n      <option name=\"ENV_FILES\" value=\"\" />\r\n      <option name=\"INTERPRETER_OPTIONS\" value=\"\" />\r\n      <option name=\"PARENT_ENVS\" value=\"true\" />\r\n      <envs>\r\n        <env name=\"PYTHONUNBUFFERED\" value=\"1\" />\r\n      </envs>\r\n      <option name=\"SDK_HOME\" value=\"\" />\r\n      <option name=\"SDK_NAME\" value=\"Python 3.12 (PythonProject1)\" />\r\n      <option name=\"WORKING_DIRECTORY\" value=\"$PROJECT_DIR$/telegram_bot/src/handlers\" />\r\n      <option name=\"IS_MODULE_SDK\" value=\"false\" />\r\n      <option name=\"ADD_CONTENT_ROOTS\" value=\"true\" />\r\n      <option name=\"ADD_SOURCE_ROOTS\" value=\"true\" />\r\n      <option name=\"SCRIPT_NAME\" value=\"$PROJECT_DIR$/telegram_bot/src/handlers/handlers.py\" />\r\n      <option name=\"PARAMETERS\" value=\"\" />\r\n      <option name=\"SHOW_COMMAND_LINE\" value=\"false\" />\r\n      <option name=\"EMULATE_TERMINAL\" value=\"false\" />\r\n      <option name=\"MODULE_MODE\" value=\"false\" />\r\n      <option name=\"REDIRECT_INPUT\" value=\"false\" />\r\n      <option name=\"INPUT_FILE\" value=\"\" />\r\n      <method v=\"2\" />\r\n    </configuration>\r\n  </component>\r\n  <component name=\"SharedIndexes\">\r\n    <attachedChunks>\r\n      <set>\r\n        <option value=\"bundled-python-sdk-495700d161d3-aa17d162503b-com.jetbrains.pycharm.community.sharedIndexes.bundled-PC-243.22562.220\" />\r\n      </set>\r\n    </attachedChunks>\r\n  </component>\r\n  <component name=\"SpellCheckerSettings\" RuntimeDictionaries=\"0\" Folders=\"0\" CustomDictionaries=\"0\" DefaultDictionary=\"application-level\" UseSingleDictionary=\"true\" transferred=\"true\" />\r\n  <component name=\"TaskManager\">\r\n    <task active=\"true\" id=\"Default\" summary=\"Default task\">\r\n      <changelist id=\"2fb98ba0-7f1a-4705-a194-f6b7a8a989d1\" name=\"Changes\" comment=\"\" />\r\n      <created>1745395848411</created>\r\n      <option name=\"number\" value=\"Default\" />\r\n      <option name=\"presentableId\" value=\"Default\" />\r\n      <updated>1745395848411</updated>\r\n    </task>\r\n    <task id=\"LOCAL-00001\" summary=\"Создание первоначальной структуры\">\r\n      <option name=\"closed\" value=\"true\" />\r\n      <created>1745397503149</created>\r\n      <option name=\"number\" value=\"00001\" />\r\n      <option name=\"presentableId\" value=\"LOCAL-00001\" />\r\n      <option name=\"project\" value=\"LOCAL\" />\r\n      <updated>1745397503149</updated>\r\n    </task>\r\n    <task id=\"LOCAL-00002\" summary=\"Создание первоначальной структуры\">\r\n      <option name=\"closed\" value=\"true\" />\r\n      <created>1745400754316</created>\r\n      <option name=\"number\" value=\"00002\" />\r\n      <option name=\"presentableId\" value=\"LOCAL-00002\" />\r\n      <option name=\"project\" value=\"LOCAL\" />\r\n      <updated>1745400754316</updated>\r\n    </task>\r\n    <task id=\"LOCAL-00003\" summary=\"Создание первоначальной структуры\">\r\n      <option name=\"closed\" value=\"true\" />\r\n      <created>1745400773151</created>\r\n      <option name=\"number\" value=\"00003\" />\r\n      <option name=\"presentableId\" value=\"LOCAL-00003\" />\r\n      <option name=\"project\" value=\"LOCAL\" />\r\n      <updated>1745400773151</updated>\r\n    </task>\r\n    <task id=\"LOCAL-00004\" summary=\"Создание первоначальной структуры\">\r\n      <option name=\"closed\" value=\"true\" />\r\n      <created>1745402939699</created>\r\n      <option name=\"number\" value=\"00004\" />\r\n      <option name=\"presentableId\" value=\"LOCAL-00004\" />\r\n      <option name=\"project\" value=\"LOCAL\" />\r\n      <updated>1745402939699</updated>\r\n    </task>\r\n    <task id=\"LOCAL-00005\" summary=\"Создание первоначальной структуры\">\r\n      <option name=\"closed\" value=\"true\" />\r\n      <created>1745748571634</created>\r\n      <option name=\"number\" value=\"00005\" />\r\n      <option name=\"presentableId\" value=\"LOCAL-00005\" />\r\n      <option name=\"project\" value=\"LOCAL\" />\r\n      <updated>1745748571634</updated>\r\n    </task>\r\n    <option name=\"localTasksCounter\" value=\"6\" />\r\n    <servers />\r\n  </component>\r\n  <component name=\"VcsManagerConfiguration\">\r\n    <MESSAGE value=\"Создание первоначальной структуры\" />\r\n    <option name=\"LAST_COMMIT_MESSAGE\" value=\"Создание первоначальной структуры\" />\r\n  </component>\r\n</project>
+===================================================================
+diff --git a/.idea/workspace.xml b/.idea/workspace.xml
+--- a/.idea/workspace.xml	(revision c488a5d63dede2ed4a57eabf405a215c03829f91)
++++ b/.idea/workspace.xml	(date 1745753605687)
+@@ -6,11 +6,10 @@
+   <component name="ChangeListManager">
+     <list default="true" id="2fb98ba0-7f1a-4705-a194-f6b7a8a989d1" name="Changes" comment="Создание первоначальной структуры">
+       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+-      <change beforePath="$PROJECT_DIR$/telegram_bot/src/handlers/config/config.py" beforeDir="false" afterPath="$PROJECT_DIR$/telegram_bot/src/handlers/config.py" afterDir="false" />
++      <change beforePath="$PROJECT_DIR$/telegram_bot/src/handlers/instruction.py" beforeDir="false" afterPath="$PROJECT_DIR$/telegram_bot/src/handlers/instruction.py" afterDir="false" />
+       <change beforePath="$PROJECT_DIR$/telegram_bot/src/handlers/profile.py" beforeDir="false" afterPath="$PROJECT_DIR$/telegram_bot/src/handlers/profile.py" afterDir="false" />
+       <change beforePath="$PROJECT_DIR$/telegram_bot/src/handlers/purchase.py" beforeDir="false" afterPath="$PROJECT_DIR$/telegram_bot/src/handlers/purchase.py" afterDir="false" />
+       <change beforePath="$PROJECT_DIR$/telegram_bot/src/handlers/start.py" beforeDir="false" afterPath="$PROJECT_DIR$/telegram_bot/src/handlers/start.py" afterDir="false" />
+-      <change beforePath="$PROJECT_DIR$/telegram_bot/src/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/telegram_bot/src/main.py" afterDir="false" />
+     </list>
+     <option name="SHOW_DIALOG" value="false" />
+     <option name="HIGHLIGHT_CONFLICTS" value="true" />
+@@ -61,8 +60,10 @@
+   </component>
+   <component name="PropertiesComponent">{
+   &quot;keyToString&quot;: {
++    &quot;Python.config.executor&quot;: &quot;Run&quot;,
+     &quot;Python.handlers.executor&quot;: &quot;Run&quot;,
+     &quot;Python.main.executor&quot;: &quot;Run&quot;,
++    &quot;Python.start.executor&quot;: &quot;Run&quot;,
+     &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+     &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
+     &quot;git-widget-placeholder&quot;: &quot;frontend&quot;,
+@@ -72,6 +73,7 @@
+ }</component>
+   <component name="RecentsManager">
+     <key name="MoveFile.RECENT_KEYS">
++      <recent name="C:\Users\levpr\PycharmProjects\Marzban_bot\telegram_bot\src\handlers\utils" />
+       <recent name="C:\Users\levpr\PycharmProjects\Marzban_bot\telegram_bot\src\handlers" />
+       <recent name="C:\Users\levpr\Marzban_bot\telegram_bot\src" />
+     </key>
+@@ -157,7 +159,15 @@
+       <option name="project" value="LOCAL" />
+       <updated>1745748571634</updated>
+     </task>
+-    <option name="localTasksCounter" value="6" />
++    <task id="LOCAL-00006" summary="Создание первоначальной структуры">
++      <option name="closed" value="true" />
++      <created>1745751617135</created>
++      <option name="number" value="00006" />
++      <option name="presentableId" value="LOCAL-00006" />
++      <option name="project" value="LOCAL" />
++      <updated>1745751617135</updated>
++    </task>
++    <option name="localTasksCounter" value="7" />
+     <servers />
+   </component>
+   <component name="VcsManagerConfiguration">

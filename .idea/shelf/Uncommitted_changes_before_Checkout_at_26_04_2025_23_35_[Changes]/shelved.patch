@@ -1,0 +1,298 @@
+Index: telegram_bot/src/handlers/handlers.py
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>import os\r\nfrom dotenv import load_dotenv\r\n\r\nload_dotenv()\r\n\r\nurl = os.getenv(\"API_URL\")\r\nclass MarzbanStates(StatesGroup):\r\n    waiting_for_data = State()\r\n\r\n\r\n@dp.message(Command(\"start\"))\r\nasync def cmd_start(message: types.Message):\r\n    await message.answer(\r\n        \"Привет! Я управляю Marzban. Введите имя и пароль админа (В виде username password):\"\r\n    )\r\n@dp.message(F.text)\r\nasync def process_direct_url(message: types.Message, state: FSMContext):\r\n    data = message.text.strip()
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/telegram_bot/src/handlers/handlers.py b/telegram_bot/src/handlers/handlers.py
+--- a/telegram_bot/src/handlers/handlers.py	(revision 309be29ea821d2297042faf496eb4629d1179f8e)
++++ b/telegram_bot/src/handlers/handlers.py	(date 1745406880314)
+@@ -1,18 +1,151 @@
+-import os
+-from dotenv import load_dotenv
++from aiogram import Router, types
++from aiogram.filters import Command
++from aiogram.fsm.context import FSMContext
++from aiogram.fsm.state import State, StatesGroup
++from aiogram.utils.keyboard import ReplyKeyboardBuilder
++
++router = Router()
+ 
+-load_dotenv()
+ 
+-url = os.getenv("API_URL")
++# Заглушка API
++class MockAPI:
++    @staticmethod
++    def authorize(username: str, password: str) -> bool:
++        return username == "admin" and password == "admin"
++
++
++# Состояния
+ class MarzbanStates(StatesGroup):
+-    waiting_for_data = State()
++    waiting_for_credentials = State()
++    waiting_for_action = State()
++
++
++# Клавиатуры
++def get_main_keyboard():
++    builder = ReplyKeyboardBuilder()
++    builder.add(types.KeyboardButton(text="/registry"))
++    builder.add(types.KeyboardButton(text="/help"))
++    builder.adjust(2)
++    return builder.as_markup(resize_keyboard=True)
++
+ 
++def get_actions_keyboard():
++    builder = ReplyKeyboardBuilder()
++    builder.add(types.KeyboardButton(text="/user"))
++    builder.add(types.KeyboardButton(text="/admin"))
++    builder.add(types.KeyboardButton(text="/logout"))
++    builder.adjust(2)
++    return builder.as_markup(resize_keyboard=True)
+ 
+-@dp.message(Command("start"))
++
++# Обработчики команд
++@router.message(Command("start"))
+ async def cmd_start(message: types.Message):
+     await message.answer(
+-        "Привет! Я управляю Marzban. Введите имя и пароль админа (В виде username password):"
++        "Привет! Я управляю Marzban. Для регистрации введите /registry",
++        reply_markup=get_main_keyboard(),
+     )
+-@dp.message(F.text)
+-async def process_direct_url(message: types.Message, state: FSMContext):
+-    data = message.text.strip()
+\ No newline at end of file
++
++
++@router.message(Command("help"))
++async def cmd_help(message: types.Message):
++    await message.answer(
++        "Доступные команды:\n"
++        "/registry - регистрация\n"
++        "/user - управление пользователями\n"
++        "/admin - управление админами\n"
++        "/logout - выход",
++        reply_markup=get_main_keyboard(),
++    )
++
++
++@router.message(Command("registry"))
++async def cmd_registry(message: types.Message, state: FSMContext):
++    await message.answer(
++        "Введите имя пользователя и пароль в формате: username password",
++        reply_markup=types.ReplyKeyboardRemove(),
++    )
++    await state.set_state(MarzbanStates.waiting_for_credentials)
++
++
++@router.message(Command("cancel"))
++async def cmd_cancel(message: types.Message, state: FSMContext):
++    current_state = await state.get_state()
++    if current_state is None:
++        await message.answer(
++            "Нет активных действий для отмены", reply_markup=get_main_keyboard()
++        )
++        return
++
++    await state.clear()
++    await message.answer(
++        "Действие отменено. Вы вернулись в главное меню.",
++        reply_markup=get_main_keyboard(),
++    )
++
++
++@router.message(MarzbanStates.waiting_for_credentials)
++async def process_credentials(message: types.Message, state: FSMContext):
++    if message.text.startswith("/"):
++        await message.answer(
++            "Пожалуйста, введите учетные данные или используйте /cancel для отмены"
++        )
++        return
++
++    try:
++        data = message.text.strip()
++        if len(data.split()) != 2:
++            raise ValueError
++
++        username, password = data.split()
++
++        if MockAPI.authorize(username, password):
++            await message.answer(
++                "✅ Авторизация успешна!\nВыберите действие:",
++                reply_markup=get_actions_keyboard(),
++            )
++            await state.set_state(MarzbanStates.waiting_for_action)
++        else:
++            await message.answer(
++                "❌ Неверные учетные данные. Попробуйте еще раз или нажмите /cancel",
++                reply_markup=types.ReplyKeyboardRemove(),
++            )
++    except ValueError:
++        await message.answer(
++            "⚠️ Неверный формат. Введите имя пользователя и пароль через пробел: username password\n"
++            "Или нажмите /cancel для отмены",
++            reply_markup=types.ReplyKeyboardRemove(),
++        )
++
++
++@router.message(Command("user"))
++async def cmd_user(message: types.Message, state: FSMContext):
++    current_state = await state.get_state()
++    if current_state != MarzbanStates.waiting_for_action.state:
++        await message.answer("Сначала авторизуйтесь через /registry")
++        return
++
++    await message.answer(
++        "Управление пользователями (заглушка)", reply_markup=get_actions_keyboard()
++    )
++
++
++@router.message(Command("admin"))
++async def cmd_admin(message: types.Message, state: FSMContext):
++    current_state = await state.get_state()
++    if current_state != MarzbanStates.waiting_for_action.state:
++        await message.answer("Сначала авторизуйтесь через /registry")
++        return
++
++    await message.answer(
++        "Управление администраторами (заглушка)", reply_markup=get_actions_keyboard()
++    )
++
++
++@router.message(Command("logout"))
++async def cmd_logout(message: types.Message, state: FSMContext):
++    await state.clear()
++    await message.answer(
++        "Вы вышли из системы. Для повторной авторизации используйте /registry",
++        reply_markup=get_main_keyboard(),
++    )
+Index: telegram_bot/src/main.py
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>from aiogram import Bot\r\nimport asyncio\r\nfrom config import token\r\nfrom handlers.handlers import dp\r\n\r\n\r\nbot = Bot(token=token)\r\n\r\n# Запуск бота\r\nasync def main():\r\n    await dp.start_polling(bot)\r\n\r\n\r\nif __name__ == \"__main__\":\r\n    asyncio.run(main())
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/telegram_bot/src/main.py b/telegram_bot/src/main.py
+--- a/telegram_bot/src/main.py	(revision 309be29ea821d2297042faf496eb4629d1179f8e)
++++ b/telegram_bot/src/main.py	(date 1745406885819)
+@@ -1,15 +1,16 @@
+-from aiogram import Bot
+ import asyncio
++from aiogram import Bot, Dispatcher
+ from config import token
+-from handlers.handlers import dp
++from handlers.handlers import router
+ 
+ 
+-bot = Bot(token=token)
+-
+-# Запуск бота
+ async def main():
++    bot = Bot(token=token)
++    dp = Dispatcher()
++    dp.include_router(router)
++
+     await dp.start_polling(bot)
+ 
+ 
+ if __name__ == "__main__":
+-    asyncio.run(main())
+\ No newline at end of file
++    asyncio.run(main())
+Index: .idea/workspace.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+><?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n<project version=\"4\">\r\n  <component name=\"AutoImportSettings\">\r\n    <option name=\"autoReloadType\" value=\"SELECTIVE\" />\r\n  </component>\r\n  <component name=\"ChangeListManager\">\r\n    <list default=\"true\" id=\"2fb98ba0-7f1a-4705-a194-f6b7a8a989d1\" name=\"Changes\" comment=\"Создание первоначальной структуры\">\r\n      <change beforePath=\"$PROJECT_DIR$/.idea/workspace.xml\" beforeDir=\"false\" afterPath=\"$PROJECT_DIR$/.idea/workspace.xml\" afterDir=\"false\" />\r\n      <change beforePath=\"$PROJECT_DIR$/telegram_bot/src/handlers/handlers.py\" beforeDir=\"false\" afterPath=\"$PROJECT_DIR$/telegram_bot/src/handlers/handlers.py\" afterDir=\"false\" />\r\n    </list>\r\n    <option name=\"SHOW_DIALOG\" value=\"false\" />\r\n    <option name=\"HIGHLIGHT_CONFLICTS\" value=\"true\" />\r\n    <option name=\"HIGHLIGHT_NON_ACTIVE_CHANGELIST\" value=\"false\" />\r\n    <option name=\"LAST_RESOLUTION\" value=\"IGNORE\" />\r\n  </component>\r\n  <component name=\"FileTemplateManagerImpl\">\r\n    <option name=\"RECENT_TEMPLATES\">\r\n      <list>\r\n        <option value=\"Dockerfile\" />\r\n        <option value=\"Python Script\" />\r\n      </list>\r\n    </option>\r\n  </component>\r\n  <component name=\"Git.Settings\">\r\n    <option name=\"RECENT_BRANCH_BY_REPOSITORY\">\r\n      <map>\r\n        <entry key=\"$PROJECT_DIR$\" value=\"backend\" />\r\n      </map>\r\n    </option>\r\n    <option name=\"RECENT_GIT_ROOT_PATH\" value=\"$PROJECT_DIR$\" />\r\n  </component>\r\n  <component name=\"GitHubPullRequestSearchHistory\">{\r\n  &quot;lastFilter&quot;: {\r\n    &quot;state&quot;: &quot;OPEN&quot;,\r\n    &quot;assignee&quot;: &quot;Furlos&quot;\r\n  }\r\n}</component>\r\n  <component name=\"GithubPullRequestsUISettings\">{\r\n  &quot;selectedUrlAndAccountId&quot;: {\r\n    &quot;url&quot;: &quot;https://github.com/Furlos/Marzban_bot.git&quot;,\r\n    &quot;accountId&quot;: &quot;3126f5b4-89ac-47a6-a3d4-43c2b3726418&quot;\r\n  }\r\n}</component>\r\n  <component name=\"HighlightingSettingsPerFile\">\r\n    <setting file=\"file://$PROJECT_DIR$/telegram_bot/src/handlers/handlers.py\" root0=\"FORCE_HIGHLIGHTING\" />\r\n  </component>\r\n  <component name=\"ProjectColorInfo\">{\r\n  &quot;associatedIndex&quot;: 7\r\n}</component>\r\n  <component name=\"ProjectId\" id=\"2w7c2vwKCzwaD5OMt6cjIwEnqaK\" />\r\n  <component name=\"ProjectLevelVcsManager\" settingsEditedManually=\"true\">\r\n    <ConfirmationsSetting value=\"1\" id=\"Add\" />\r\n  </component>\r\n  <component name=\"ProjectViewState\">\r\n    <option name=\"hideEmptyMiddlePackages\" value=\"true\" />\r\n    <option name=\"showLibraryContents\" value=\"true\" />\r\n  </component>\r\n  <component name=\"PropertiesComponent\"><![CDATA[{\r\n  \"keyToString\": {\r\n    \"RunOnceActivity.ShowReadmeOnStart\": \"true\",\r\n    \"RunOnceActivity.git.unshallow\": \"true\",\r\n    \"git-widget-placeholder\": \"frontend\",\r\n    \"last_opened_file_path\": \"C:/Users/levpr/Marzban_bot\",\r\n    \"settings.editor.selected.configurable\": \"preferences.sourceCode.Python\"\r\n  }\r\n}]]></component>\r\n  <component name=\"RecentsManager\">\r\n    <key name=\"MoveFile.RECENT_KEYS\">\r\n      <recent name=\"C:\\Users\\levpr\\Marzban_bot\\telegram_bot\\src\" />\r\n    </key>\r\n  </component>\r\n  <component name=\"SharedIndexes\">\r\n    <attachedChunks>\r\n      <set>\r\n        <option value=\"bundled-python-sdk-495700d161d3-aa17d162503b-com.jetbrains.pycharm.community.sharedIndexes.bundled-PC-243.22562.220\" />\r\n      </set>\r\n    </attachedChunks>\r\n  </component>\r\n  <component name=\"SpellCheckerSettings\" RuntimeDictionaries=\"0\" Folders=\"0\" CustomDictionaries=\"0\" DefaultDictionary=\"application-level\" UseSingleDictionary=\"true\" transferred=\"true\" />\r\n  <component name=\"TaskManager\">\r\n    <task active=\"true\" id=\"Default\" summary=\"Default task\">\r\n      <changelist id=\"2fb98ba0-7f1a-4705-a194-f6b7a8a989d1\" name=\"Changes\" comment=\"\" />\r\n      <created>1745395848411</created>\r\n      <option name=\"number\" value=\"Default\" />\r\n      <option name=\"presentableId\" value=\"Default\" />\r\n      <updated>1745395848411</updated>\r\n    </task>\r\n    <task id=\"LOCAL-00001\" summary=\"Создание первоначальной структуры\">\r\n      <option name=\"closed\" value=\"true\" />\r\n      <created>1745397503149</created>\r\n      <option name=\"number\" value=\"00001\" />\r\n      <option name=\"presentableId\" value=\"LOCAL-00001\" />\r\n      <option name=\"project\" value=\"LOCAL\" />\r\n      <updated>1745397503149</updated>\r\n    </task>\r\n    <task id=\"LOCAL-00002\" summary=\"Создание первоначальной структуры\">\r\n      <option name=\"closed\" value=\"true\" />\r\n      <created>1745400754316</created>\r\n      <option name=\"number\" value=\"00002\" />\r\n      <option name=\"presentableId\" value=\"LOCAL-00002\" />\r\n      <option name=\"project\" value=\"LOCAL\" />\r\n      <updated>1745400754316</updated>\r\n    </task>\r\n    <task id=\"LOCAL-00003\" summary=\"Создание первоначальной структуры\">\r\n      <option name=\"closed\" value=\"true\" />\r\n      <created>1745400773151</created>\r\n      <option name=\"number\" value=\"00003\" />\r\n      <option name=\"presentableId\" value=\"LOCAL-00003\" />\r\n      <option name=\"project\" value=\"LOCAL\" />\r\n      <updated>1745400773151</updated>\r\n    </task>\r\n    <option name=\"localTasksCounter\" value=\"4\" />\r\n    <servers />\r\n  </component>\r\n  <component name=\"VcsManagerConfiguration\">\r\n    <MESSAGE value=\"Создание первоначальной структуры\" />\r\n    <option name=\"LAST_COMMIT_MESSAGE\" value=\"Создание первоначальной структуры\" />\r\n  </component>\r\n</project>
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/.idea/workspace.xml b/.idea/workspace.xml
+--- a/.idea/workspace.xml	(revision 309be29ea821d2297042faf496eb4629d1179f8e)
++++ b/.idea/workspace.xml	(date 1745664698028)
+@@ -7,6 +7,7 @@
+     <list default="true" id="2fb98ba0-7f1a-4705-a194-f6b7a8a989d1" name="Changes" comment="Создание первоначальной структуры">
+       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+       <change beforePath="$PROJECT_DIR$/telegram_bot/src/handlers/handlers.py" beforeDir="false" afterPath="$PROJECT_DIR$/telegram_bot/src/handlers/handlers.py" afterDir="false" />
++      <change beforePath="$PROJECT_DIR$/telegram_bot/src/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/telegram_bot/src/main.py" afterDir="false" />
+     </list>
+     <option name="SHOW_DIALOG" value="false" />
+     <option name="HIGHLIGHT_CONFLICTS" value="true" />
+@@ -55,20 +56,47 @@
+     <option name="hideEmptyMiddlePackages" value="true" />
+     <option name="showLibraryContents" value="true" />
+   </component>
+-  <component name="PropertiesComponent"><![CDATA[{
+-  "keyToString": {
+-    "RunOnceActivity.ShowReadmeOnStart": "true",
+-    "RunOnceActivity.git.unshallow": "true",
+-    "git-widget-placeholder": "frontend",
+-    "last_opened_file_path": "C:/Users/levpr/Marzban_bot",
+-    "settings.editor.selected.configurable": "preferences.sourceCode.Python"
++  <component name="PropertiesComponent">{
++  &quot;keyToString&quot;: {
++    &quot;Python.handlers.executor&quot;: &quot;Run&quot;,
++    &quot;Python.main.executor&quot;: &quot;Run&quot;,
++    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
++    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
++    &quot;git-widget-placeholder&quot;: &quot;frontend&quot;,
++    &quot;last_opened_file_path&quot;: &quot;C:/Users/levpr/Marzban_bot&quot;,
++    &quot;settings.editor.selected.configurable&quot;: &quot;com.jetbrains.python.black.configuration.BlackFormatterConfigurable&quot;
+   }
+-}]]></component>
++}</component>
+   <component name="RecentsManager">
+     <key name="MoveFile.RECENT_KEYS">
+       <recent name="C:\Users\levpr\Marzban_bot\telegram_bot\src" />
+     </key>
+   </component>
++  <component name="RunManager">
++    <configuration name="handlers" type="PythonConfigurationType" factoryName="Python" nameIsGenerated="true">
++      <module name="Marzban_bot" />
++      <option name="ENV_FILES" value="" />
++      <option name="INTERPRETER_OPTIONS" value="" />
++      <option name="PARENT_ENVS" value="true" />
++      <envs>
++        <env name="PYTHONUNBUFFERED" value="1" />
++      </envs>
++      <option name="SDK_HOME" value="" />
++      <option name="SDK_NAME" value="Python 3.12 (PythonProject1)" />
++      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/telegram_bot/src/handlers" />
++      <option name="IS_MODULE_SDK" value="false" />
++      <option name="ADD_CONTENT_ROOTS" value="true" />
++      <option name="ADD_SOURCE_ROOTS" value="true" />
++      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/telegram_bot/src/handlers/handlers.py" />
++      <option name="PARAMETERS" value="" />
++      <option name="SHOW_COMMAND_LINE" value="false" />
++      <option name="EMULATE_TERMINAL" value="false" />
++      <option name="MODULE_MODE" value="false" />
++      <option name="REDIRECT_INPUT" value="false" />
++      <option name="INPUT_FILE" value="" />
++      <method v="2" />
++    </configuration>
++  </component>
+   <component name="SharedIndexes">
+     <attachedChunks>
+       <set>
+@@ -109,7 +137,15 @@
+       <option name="project" value="LOCAL" />
+       <updated>1745400773151</updated>
+     </task>
+-    <option name="localTasksCounter" value="4" />
++    <task id="LOCAL-00004" summary="Создание первоначальной структуры">
++      <option name="closed" value="true" />
++      <created>1745402939699</created>
++      <option name="number" value="00004" />
++      <option name="presentableId" value="LOCAL-00004" />
++      <option name="project" value="LOCAL" />
++      <updated>1745402939699</updated>
++    </task>
++    <option name="localTasksCounter" value="5" />
+     <servers />
+   </component>
+   <component name="VcsManagerConfiguration">
