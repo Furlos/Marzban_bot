@@ -11,7 +11,7 @@ purchase_router = Router()
 
 # Конфигурация подписок
 SUBSCRIPTIONS = {
-    "1": {"months": 1, "price": 150, "label": "1 месяц - 150⭐"},  # цена в звездах
+    "1": {"months": 1, "price": 1, "label": "1 месяц - 150⭐"},  # цена в звездах
     "3": {"months": 3, "price": 350, "label": "3 месяца - 350⭐"},
     "6": {"months": 6, "price": 750, "label": "6 месяцев - 750⭐"},
     "12": {"months": 12, "price": 1000, "label": "12 месяцев - 1000⭐"}
