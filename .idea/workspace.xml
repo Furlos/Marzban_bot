@@ -5,8 +5,6 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="2fb98ba0-7f1a-4705-a194-f6b7a8a989d1" name="Changes" comment="Создание первоначальной структуры">
-      <change beforePath="$PROJECT_DIR$/.idea/Marzban_bot.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/Marzban_bot.iml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -265,6 +263,7 @@
   </component>
   <component name="VcsManagerConfiguration">
     <MESSAGE value="Создание первоначальной структуры" />
-    <option name="LAST_COMMIT_MESSAGE" value="Создание первоначальной структуры" />
+    <MESSAGE value="добавление файлов .idea" />
+    <option name="LAST_COMMIT_MESSAGE" value="добавление файлов .idea" />
   </component>
 </project>
