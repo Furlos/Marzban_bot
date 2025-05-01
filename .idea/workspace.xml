@@ -4,10 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="2fb98ba0-7f1a-4705-a194-f6b7a8a989d1" name="Changes" comment="Создание первоначальной структуры">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/telegram_bot/src/handlers/instruction.py" beforeDir="false" afterPath="$PROJECT_DIR$/telegram_bot/src/handlers/instruction.py" afterDir="false" />
-    </list>
+    <list default="true" id="2fb98ba0-7f1a-4705-a194-f6b7a8a989d1" name="Changes" comment="13123123132" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -65,7 +62,7 @@
     "Python.start.executor": "Run",
     "RunOnceActivity.ShowReadmeOnStart": "true",
     "RunOnceActivity.git.unshallow": "true",
-    "git-widget-placeholder": "frontend",
+    "git-widget-placeholder": "backend",
     "last_opened_file_path": "C:/Users/levpr/PycharmProjects/Marzban_bot",
     "settings.editor.selected.configurable": "com.jetbrains.python.black.configuration.BlackFormatterConfigurable"
   }
@@ -255,6 +252,7 @@
   </component>
   <component name="VcsManagerConfiguration">
     <MESSAGE value="Создание первоначальной структуры" />
-    <option name="LAST_COMMIT_MESSAGE" value="Создание первоначальной структуры" />
+    <MESSAGE value="13123123132" />
+    <option name="LAST_COMMIT_MESSAGE" value="13123123132" />
   </component>
 </project>
