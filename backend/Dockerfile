@@ -23,7 +23,7 @@ COPY pyproject.toml .
 # Создаем минимальную структуру проекта
 RUN mkdir -p src && \
     touch src/__init__.py && \
-    echo "from fastapi import FastAPI\napp = FastAPI()" > src/main.py
+    echo "from fastapi import FastAPI\n app = FastAPI()" > src/main.py
 
 # Установка зависимостей
 RUN uv pip install --no-cache-dir -e .
