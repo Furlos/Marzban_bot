@@ -1,7 +1,7 @@
 from aiogram import Router, types
 from aiogram.filters import Command
 from datetime import datetime
-from telegram_bot.src.handlers.api_requests import get_user_by_username
+from .api_requests import get_user_by_username
 
 profile_router = Router()
 

@@ -1,7 +1,7 @@
 import aiohttp
 import asyncio
 import json
-from .config import url  # Import the URL from your config file
+from config import url  # Import the URL from your config file
 
 async def create_user(username, expire_days, data_limit_gb):
     api_url = f"{url}/users/"  # Use the URL from config
@@ -36,9 +36,7 @@ async def create_user(username, expire_days, data_limit_gb):
             except json.JSONDecodeError:
                 print(response_text)
                 print(f"Status code: {response.status}")
-                return {"error": "Server returned non-JSON response", "status": response.status}
-
-
+                return "Server returned non-JSON response"
 async def get_user_by_username(username):
     api_url = f"{url}/users/(user_id?username={username}"
 
