@@ -35,12 +35,12 @@
     &quot;assignee&quot;: &quot;Furlos&quot;
   }
 }</component>
-  <component name="GithubPullRequestsUISettings"><![CDATA[{
-  "selectedUrlAndAccountId": {
-    "url": "https://github.com/Furlos/Marzban_bot.git",
-    "accountId": "3126f5b4-89ac-47a6-a3d4-43c2b3726418"
+  <component name="GithubPullRequestsUISettings">{
+  &quot;selectedUrlAndAccountId&quot;: {
+    &quot;url&quot;: &quot;https://github.com/Furlos/Marzban_bot.git&quot;,
+    &quot;accountId&quot;: &quot;3126f5b4-89ac-47a6-a3d4-43c2b3726418&quot;
   }
-}]]></component>
+}</component>
   <component name="HighlightingSettingsPerFile">
     <setting file="file://$PROJECT_DIR$/telegram_bot/src/handlers/handlers.py" root0="FORCE_HIGHLIGHTING" />
   </component>
