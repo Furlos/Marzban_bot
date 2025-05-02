@@ -1,6 +1,6 @@
 from aiogram import Router, types
 from aiogram.utils.keyboard import InlineKeyboardBuilder
-from telegram_bot.src.handlers.api_requests import get_user_by_username
+from .api_requests import get_user_by_username
 
 instruction_router = Router()
 

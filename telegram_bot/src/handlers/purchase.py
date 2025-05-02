@@ -4,8 +4,8 @@ from aiogram.types import LabeledPrice, PreCheckoutQuery
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 import asyncio
 
-from telegram_bot.src.handlers.api_requests import update_user
-from telegram_bot.src.handlers.instruction import instruction_router
+from .api_requests import update_user
+from .instruction import instruction_router
 
 purchase_router = Router()
 
