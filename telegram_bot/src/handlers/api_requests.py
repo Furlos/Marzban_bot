@@ -1,7 +1,7 @@
 import aiohttp
 import asyncio
 import json
-from config import url  # Import the URL from your config file
+from config import url
 
 async def create_user(username, expire_days, data_limit_gb):
     api_url = f"{url}/users/"  # Use the URL from config
