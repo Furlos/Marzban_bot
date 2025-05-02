@@ -6,7 +6,6 @@
   <component name="ChangeListManager">
     <list default="true" id="2fb98ba0-7f1a-4705-a194-f6b7a8a989d1" name="Changes" comment="Создание первоначальной структуры">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/telegram_bot/Dockerfile" beforeDir="false" afterPath="$PROJECT_DIR$/telegram_bot/Dockerfile" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -24,7 +23,7 @@
   <component name="Git.Settings">
     <option name="RECENT_BRANCH_BY_REPOSITORY">
       <map>
-        <entry key="$PROJECT_DIR$" value="frontend" />
+        <entry key="$PROJECT_DIR$" value="backend" />
       </map>
     </option>
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
@@ -267,15 +266,7 @@
       <option name="project" value="LOCAL" />
       <updated>1746123176088</updated>
     </task>
-    <task id="LOCAL-00016" summary="Создание первоначальной структуры">
-      <option name="closed" value="true" />
-      <created>1746205849365</created>
-      <option name="number" value="00016" />
-      <option name="presentableId" value="LOCAL-00016" />
-      <option name="project" value="LOCAL" />
-      <updated>1746205849365</updated>
-    </task>
-    <option name="localTasksCounter" value="17" />
+    <option name="localTasksCounter" value="16" />
     <servers />
   </component>
   <component name="VcsManagerConfiguration">

@@ -9,8 +9,8 @@ services:
       - .:/app
     environment:
       - PYTHONUNBUFFERED=1
-      - API_TOKEN=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZG1pbiIsImFjY2VzcyI6InN1ZG8iLCJpYXQiOjE3NDYxODE3NjAsImV4cCI6MTc0NjI2ODE2MH0.z60ASSeeH5cCirr_CUmlgIuNm_DBhTTs4UsdP_px1m0
-      - API_URL=https://instant-paris.space:8000
+      - API_TOKEN="YOUR_MARZBAN_ADMIN_TOKEN"
+      - API_URL="YOUR_MARZBAN_LINK"
   telegram_bot:
     build:
       context: ./telegram_bot
@@ -19,4 +19,4 @@ services:
     environment:
       - PYTHONUNBUFFERED=1
       - API_URL=http://backend:3000
-      - BOT_TOKEN=7621143244:AAFbXHxmT6yeniY0MlnIC36ZeL13q3X607A
+      - BOT_TOKEN="YOUR_TG_BOT_TOKEN"
