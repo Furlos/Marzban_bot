@@ -4,7 +4,7 @@ services:
   backend:
     build: ./backend
     ports:
-      - "8000:8000"
+      - "3000:3000"
     volumes:
       - .:/app
     environment:
@@ -18,5 +18,5 @@ services:
       - backend
     environment:
       - PYTHONUNBUFFERED=1
-      - API_URL=http://backend:8000
+      - API_URL=http://backend:3000
       - BOT_TOKEN=7621143244:AAFbXHxmT6yeniY0MlnIC36ZeL13q3X607A
