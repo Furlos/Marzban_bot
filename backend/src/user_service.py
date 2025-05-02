@@ -1,225 +1,134 @@
+from uuid import uuid4
 import httpx
-import base64
 from datetime import datetime, timedelta
-from typing import Optional, Dict, Any
+from typing import Dict, Any, Optional
+from fastapi import APIRouter, Depends, HTTPException
+from .schemas import UserCreate, UserUpdate
+from .config import config_name
+from .token_manager import TokenManager, MarzbanAPIError
 
-
-class MarzbanAPIError(Exception):
-    """Класс для ошибок API Marzban"""
-
-    pass
-
+router = APIRouter(tags=["Users"], prefix="/users")
 
 class UserService:
-    def __init__(self, api_url: str, api_token: str):
-        """
-        Инициализация сервиса для работы с пользователями VPN.
+    def __init__(self, token_manager: Optional[TokenManager] = None):
+        self.token_manager = token_manager
+        self.client = httpx.AsyncClient(timeout=30.0)
+        self._update_headers()
 
-        :param api_url: URL API Marzban (например, 'https://vpn.example.com/api')
-        :param api_token: API Token администратора Marzban
-        """
-        self.api_url = api_url
-        self.api_token = api_token
-        self.client = httpx.AsyncClient(
-            headers={
-                "Authorization": f"Bearer {self.api_token}",
-                "Content-Type": "application/json",
-            },
-            timeout=30.0,
-        )
+    def _update_headers(self):
+        self.client.headers.update({
+            "Authorization": f"Bearer {config_name.api_token}",
+            "Content-Type": "application/json"
+        })
 
-    async def _make_request(
-            self, method: str, endpoint: str, data: Optional[Dict] = None
-    ) -> Dict:
-        """
-        Асинхронный метод для выполнения запросов к API
-
-        :param method: HTTP метод (GET, POST, PUT)
-        :param endpoint: Конечная точка API
-        :param data: Данные для отправки
-        :return: Ответ API в виде словаря
-        """
-        url = f"{self.api_url}/{endpoint.lstrip('/')}"
-
+    async def _make_request(self, method: str, endpoint: str, data: Optional[Dict] = None) -> Dict:
+        url = f"{config_name.api_url.rstrip('/')}/{endpoint.lstrip('/')}"
         try:
-            response = await self.client.request(method=method, url=url, json=data)
+            response = await self.client.request(method, url, json=data)
             response.raise_for_status()
             return response.json()
         except httpx.HTTPStatusError as e:
-            error_msg = f"Ошибка при выполнении запроса к Marzban API: {str(e)}"
-            if e.response is not None:
-                error_msg += (
-                    f", статус: {e.response.status_code}, ответ: {e.response.text}"
-                )
-            raise MarzbanAPIError(error_msg)
-        except httpx.RequestError as e:
-            raise MarzbanAPIError(f"Ошибка соединения: {str(e)}")
+            error_detail = f"Status: {e.response.status_code}, Response: {e.response.text}"
+            if e.response.status_code == 401 and self.token_manager:
+                if await self.token_manager.manual_refresh():
+                    self._update_headers()
+                    return await self._make_request(method, endpoint, data)
+            raise MarzbanAPIError(f"API Error: {error_detail}")
         except Exception as e:
-            raise MarzbanAPIError(f"Неожиданная ошибка: {str(e)}")
+            raise MarzbanAPIError(f"Connection Error: {str(e)}")
 
-    def _generate_ss_link(
-            self, method: str, password: str, server: str, port: int, username: str
-    ) -> str:
-        """
-        Генерация ссылки для подключения Shadowsocks
+    @staticmethod
+    def _generate_vless_link(uuid: str, domain: str, port: int, username: str) -> str:
+        """Генерация корректной VLESS-ссылки"""
+        return (
+            f"vless://{uuid}@{domain}:{port}?"
+            f"type=tcp&"
+            f"security=tls&"
+            f"flow=xtls-rprx-vision&"
+            f"sni={domain}#"
+            f"{username}"
+        )
 
-        :param method: Метод шифрования
-        :param password: Пароль
-        :param server: Адрес сервера
-        :param port: Порт
-        :param username: Имя пользователя
-        :return: Ссылка для подключения в формате ss://
-        """
-        ss_config = f"{method}:{password}@{server}:{port}"
-        ss_config_encoded = base64.urlsafe_b64encode(ss_config.encode()).decode()
-        return f"ss://{ss_config_encoded}#{username}"
-
-    async def create_user(
-            self, telegram_id: str, limit_traffic_gb: float, expire_days: int
-    ) -> Dict[str, Any]:
-        """
-        Асинхронно создает нового пользователя VPN
-
-        :param telegram_id: ID пользователя в Telegram
-        :param limit_traffic_gb: Лимит трафика в гигабайтах
-        :param expire_days: Срок действия в днях
-        :return: Данные созданного пользователя
-        """
+    async def create_user(self, telegram_id: str, limit_traffic_gb: float, expire_days: int) -> Dict[str, Any]:
         expire_date = datetime.now() + timedelta(days=expire_days)
-        expire_timestamp = int(expire_date.timestamp())
+        user_uuid = str(uuid4())
+        domain = "instant-paris.space"  # Ваш домен
+        vless_port = 8443  # Порт из конфига Xray
 
         user_data = {
             "username": str(telegram_id),
             "proxies": {
-                "shadowsocks": {
-                    "method": "chacha20-ietf-poly1305",
+                "vless": {
+                    "id": user_uuid,
+                    "flow": "xtls-rprx-vision"
                 }
             },
-            "inbounds": {"shadowsocks": []},
-            "expire": expire_timestamp,
-            "data_limit": limit_traffic_gb * 1024 * 1024 * 1024,
-            "data_limit_reset_strategy": "month",
+            "inbounds": {"vless": ["VLESS-TLS"]},
+            "expire": int(expire_date.timestamp()),
+            "data_limit": int(limit_traffic_gb * 1073741824),
+            "data_limit_reset_strategy": "month"
         }
 
-        response = await self._make_request("POST", "/api/user", user_data)
-        ss_config = response.get("proxies", {}).get("shadowsocks", {})
-        server = ss_config.get("server") or self.api_url.split("//")[-1].split("/")[0]
-
-        return {
-            "username": response.get("username"),
-            "expire_date": expire_date.strftime("%Y-%m-%d"),
-            "data_limit_gb": limit_traffic_gb,
-            "connection_link": self._generate_ss_link(
-                method=ss_config.get("method", "chacha20-ietf-poly1305"),
-                password=ss_config.get("password", ""),
-                server=server,
-                port=ss_config.get("port", 443),
-                username=response.get("username", ""),
-            ),
-        }
-
-    async def update_user(
-            self,
-            telegram_id: str,
-            limit_traffic_gb: Optional[float] = None,
-            expire_days: Optional[int] = None,
-    ) -> Dict[str, Any]:
-        """
-        Асинхронно обновляет данные пользователя VPN
-        """
         try:
-            current_user = await self._make_request("GET", f"/api/user/{telegram_id}")
-        except MarzbanAPIError as e:
-            if "status: 404" in str(e):
-                raise MarzbanAPIError(f"Пользователь с ID {telegram_id} не найден")
-            raise
+            response = await self._make_request("POST", "/api/user", user_data)
+            return {
+                "username": response["username"],
+                "expire_date": expire_date.strftime("%Y-%m-%d"),
+                "data_limit_gb": limit_traffic_gb,
+                "connection_link": self._generate_vless_link(
+                    uuid=user_uuid,
+                    domain=domain,
+                    port=vless_port,
+                    username=response["username"]
+                )
+            }
+        except Exception as e:
+            raise MarzbanAPIError(f"Ошибка создания пользователя: {str(e)}")
 
+    async def update_user(self, telegram_id: str,
+                          limit_traffic_gb: Optional[float] = None,
+                          expire_days: Optional[int] = None) -> Dict[str, Any]:
+        current_user = await self._make_request("GET", f"/api/user/{telegram_id}")
         update_data = {}
 
         if expire_days is not None:
-            current_expire = current_user.get("expire", 0)
-            now_timestamp = int(datetime.now().timestamp())
-
-            if current_expire < now_timestamp:
-                new_expire = datetime.now() + timedelta(days=expire_days)
-            else:
-                current_expire_date = datetime.fromtimestamp(current_expire)
-                new_expire = current_expire_date + timedelta(days=expire_days)
-
+            new_expire = datetime.now() + timedelta(days=expire_days)
             update_data["expire"] = int(new_expire.timestamp())
 
         if limit_traffic_gb is not None:
-            update_data["data_limit"] = limit_traffic_gb * 1024 * 1024 * 1024
+            update_data["data_limit"] = int(limit_traffic_gb * 1073741824)
 
         if update_data:
-            updated_user = await self._make_request(
-                "PUT", f"/api/user/{telegram_id}", update_data
-            )
-            return {
-                "username": updated_user["username"],
-                "expire_date": datetime.fromtimestamp(updated_user["expire"]).strftime(
-                    "%Y-%m-%d"
-                ),
-                "data_limit_gb": (
-                    updated_user["data_limit"] / (1024 ** 3)
-                    if updated_user["data_limit"]
-                    else 0
-                ),
-            }
-
-        return {
-            "username": current_user["username"],
-            "expire_date": datetime.fromtimestamp(current_user["expire"]).strftime(
-                "%Y-%m-%d"
-            ),
-            "data_limit_gb": (
-                current_user["data_limit"] / (1024 ** 3)
-                if current_user["data_limit"]
-                else 0
-            ),
-        }
+            updated_user = await self._make_request("PUT", f"/api/user/{telegram_id}", update_data)
+            return await self._format_user_response(updated_user)
+        return await self._format_user_response(current_user)
 
     async def get_user(self, telegram_id: str) -> Dict[str, Any]:
-        """
-        Асинхронно получает информацию о пользователе
-        """
         user_data = await self._make_request("GET", f"/api/user/{telegram_id}")
+        return await self._format_user_response(user_data)
 
-        # Генерация connection_link аналогично методу create_user
-        ss_config = user_data.get("proxies", {}).get("shadowsocks", {})
-        server = ss_config.get("server") or self.api_url.split("//")[-1].split("/")[0]
-
+    async def _format_user_response(self, user_data: Dict) -> Dict:
+        domain = "instant-paris.space"
+        vless_port = 8443
         return {
             "username": user_data["username"],
-            "expire_date": datetime.fromtimestamp(user_data["expire"]).strftime(
-                "%Y-%m-%d"
-            ),
-            "data_limit_gb": (
-                user_data["data_limit"] / (1024 ** 3) if user_data["data_limit"] else 0
-            ),
-            "used_traffic_gb": (
-                user_data["used_traffic"] / (1024 ** 3)
-                if user_data["used_traffic"]
-                else 0
-            ),
+            "expire_date": datetime.fromtimestamp(user_data["expire"]).strftime("%Y-%m-%d"),
+            "data_limit_gb": user_data["data_limit"] / 1073741824,
+            "used_traffic_gb": user_data.get("used_traffic", 0) / 1073741824,
             "status": user_data["status"],
-            "connection_link": self._generate_ss_link(
-                method=ss_config.get("method", "chacha20-ietf-poly1305"),
-                password=ss_config.get("password", ""),
-                server=server,
-                port=ss_config.get("port", 443),
-                username=user_data.get("username", ""),
-            ),
+            "connection_link": self._generate_vless_link(
+                uuid=user_data["proxies"]["vless"]["id"],
+                domain=domain,
+                port=vless_port,
+                username=user_data["username"]
+            )
         }
 
     async def close(self):
-        """Закрывает клиент httpx"""
         await self.client.aclose()
 
     async def __aenter__(self):
-        """Поддержка контекстного менеджера"""
         return self
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):
-        """Автоматическое закрытие клиента"""
         await self.close()
