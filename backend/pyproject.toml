@@ -8,6 +8,7 @@ dependencies = [
     "fastapi>=0.115.12",
     "httpx>=0.28.1",
     "pydantic>=2.11.3",
+    "uvicorn>=0.29.0"  # Добавлено явно
 ]
 
 [build-system]

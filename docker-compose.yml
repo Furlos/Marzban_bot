@@ -1,0 +1,22 @@
+version: '3.8'
+
+services:
+  backend:
+    build: ./backend
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/app
+    environment:
+      - PYTHONUNBUFFERED=1
+      - API_TOKEN=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZG1pbiIsImFjY2VzcyI6InN1ZG8iLCJpYXQiOjE3NDYxODE3NjAsImV4cCI6MTc0NjI2ODE2MH0.z60ASSeeH5cCirr_CUmlgIuNm_DBhTTs4UsdP_px1m0
+      - API_URL=https://instant-paris.space:8000
+  telegram_bot:
+    build:
+      context: ./telegram_bot
+    depends_on:
+      - backend
+    environment:
+      - PYTHONUNBUFFERED=1
+      - API_URL=http://backend:8000
+      - BOT_TOKEN=7621143244:AAFbXHxmT6yeniY0MlnIC36ZeL13q3X607A
