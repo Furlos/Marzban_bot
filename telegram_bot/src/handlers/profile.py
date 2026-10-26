@@ -1,6 +1,7 @@
 from aiogram import Router, types
 from aiogram.filters import Command
 from datetime import datetime
+from html import escape
 from .api_requests import get_user_by_username
 
 profile_router = Router()
@@ -11,7 +12,7 @@ async def generate_profile_message(user: types.User):
     Генерирует текст и клавиатуру для профиля пользователя.
     """
     user_id = user.id
-    username = user.username or "не указан"
+    username = escape(user.username or "не указан")
 
     # Получаем данные от API
     api_response = await get_user_by_username(str(user_id))
