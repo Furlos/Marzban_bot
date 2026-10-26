@@ -1,30 +1,11 @@
-# Этап сборки
-FROM python:3.13-slim AS builder
+FROM python:3.12-slim
 
-WORKDIR /frontend
+WORKDIR /bot
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
 
-# Устанавливаем uv
-RUN pip install --no-cache-dir uv
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
 
-# Копируем только файлы зависимостей
-COPY pyproject.toml uv.lock ./
-
-# Создаем виртуальное окружение и устанавливаем зависимости
-RUN uv venv && . .venv/bin/activate && uv pip install --no-cache .
-
-# Копируем исходный код
-COPY src ./src
-
-# Этап выполнения
-FROM python:3.13-slim
-
-WORKDIR /frontend
-
-# Копируем виртуальное окружение и код
-COPY --from=builder /frontend /frontend
-
-# Устанавливаем uv в финальном образе (для активации venv)
-RUN pip install --no-cache-dir uv
-
-# Активируем venv и запускаем приложение
-CMD ["sh", "-c", ". .venv/bin/activate && python src/main.py"]
+COPY src/ ./src/
+CMD ["python", "src/main.py"]

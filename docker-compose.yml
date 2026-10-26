@@ -1,22 +1,21 @@
-version: '3.8'
-
 services:
   backend:
     build: ./backend
+    # Expose diagnostics only on localhost, never to the public internet.
     ports:
-      - "3000:3000"
-    volumes:
-      - .:/app
+      - "127.0.0.1:3000:3000"
     environment:
-      - PYTHONUNBUFFERED=1
-      - API_TOKEN="YOUR_MARZBAN_ADMIN_TOKEN"
-      - API_URL="YOUR_MARZBAN_LINK"
+      API_TOKEN: ${API_TOKEN:?Set API_TOKEN in a local .env file}
+      API_URL: ${MARZBAN_API_URL:?Set MARZBAN_API_URL in a local .env file}
+      INTERNAL_API_KEY: ${INTERNAL_API_KEY:?Set a random INTERNAL_API_KEY in a local .env file}
+    restart: unless-stopped
+
   telegram_bot:
-    build:
-      context: ./telegram_bot
+    build: ./telegram_bot
     depends_on:
       - backend
     environment:
-      - PYTHONUNBUFFERED=1
-      - API_URL=http://backend:3000
-      - BOT_TOKEN="YOUR_TG_BOT_TOKEN"
+      BOT_TOKEN: ${BOT_TOKEN:?Set BOT_TOKEN in a local .env file}
+      API_URL: http://backend:3000
+      INTERNAL_API_KEY: ${INTERNAL_API_KEY:?Set a random INTERNAL_API_KEY in a local .env file}
+    restart: unless-stopped

@@ -1,159 +1,56 @@
 # Marzban Telegram Control Plane
 
-<p align="center">
-  <b>A containerized Python backend + Telegram interface for managing Marzban users.</b>
-</p>
+Python/FastAPI internal backend + Aiogram Telegram bot + external Marzban API.
 
-<p align="center">
-  <code>Python</code> · <code>FastAPI</code> · <code>Aiogram</code> · <code>HTTPX</code> · <code>Pydantic</code> · <code>Docker Compose</code>
-</p>
-
----
-
-## Why this project exists
-
-The project separates a Telegram-facing interface from the infrastructure integration behind it. Instead of letting bot handlers talk directly to Marzban, requests go through a dedicated **FastAPI backend** responsible for user-management operations and communication with the external Marzban API.
-
-That gives the project a simple service boundary and keeps Telegram-specific code independent from backend integration logic.
+**Portfolio status:** backend integration prototype. The internal API has authentication and tests; external Marzban, Telegram and Stars payments have **not** been end-to-end tested in production. Do not publish a public VPN management endpoint or accept live payments based only on unit tests.
 
 ## Architecture
 
 ```text
-┌──────────────────┐
-│ Telegram user    │
-└────────┬─────────┘
-         │ command / interaction
-         ▼
-┌──────────────────┐
-│ Telegram Bot     │
-│ Aiogram + aiohttp│
-└────────┬─────────┘
-         │ HTTP
-         ▼
-┌──────────────────────────┐
-│ Python Backend           │
-│ FastAPI + Pydantic       │
-│                          │
-│ /users                   │
-│  POST  create user       │
-│  GET   get user          │
-│  PUT   update user       │
-└────────────┬─────────────┘
-             │ async HTTP
-             ▼
-┌──────────────────────────┐
-│ Marzban API              │
-│ user / subscription data │
-└──────────────────────────┘
+Telegram client -> Aiogram bot -> internal authenticated FastAPI -> Marzban API
 ```
 
-Docker Compose connects both Python services on an internal network. The bot reaches the backend as `http://backend:3000`, while the backend receives Marzban credentials through environment variables.
+The backend owns Marzban admin credentials. The Telegram bot talks to the backend with a shared internal token; it **must not** expose the backend admin credentials to end users.
 
-## Backend design
+## Local setup
 
-The backend is intentionally split by responsibility:
+Requirements: Docker Engine + Docker Compose, your own Marzban installation, your own Telegram bot token.
 
-```text
-backend/src/
-├── main.py          # FastAPI application entry point
-├── api.py           # HTTP routes / transport layer
-├── schemas.py       # Pydantic request models
-├── user_service.py  # Marzban integration and user operations
-└── config.py        # environment-based configuration
-```
+1. Copy `.env.example` to `.env` locally.
+2. Set `MARZBAN_API_URL`, `API_TOKEN`, `BOT_TOKEN`.
+3. Generate and set a long random `INTERNAL_API_KEY` (never commit it).
+4. Run `docker compose up --build`.
+5. Inspect `docker compose logs` before testing with real users.
 
-The `/users` API exposes create, read and update operations. Route handlers validate incoming data with Pydantic and delegate external API work to `UserService` rather than embedding integration logic into the HTTP layer.
+The backend is accessible **only on 127.0.0.1:3000** on the Docker host and on the private Compose network. Its user endpoints require the `X-Internal-Token` header.
 
-## Service layout
+### API
 
-```text
-Marzban_bot/
-├── backend/
-│   ├── src/
-│   ├── Dockerfile
-│   ├── pyproject.toml
-│   └── uv.lock
-│
-├── telegram_bot/
-│   ├── src/
-│   ├── Dockerfile
-│   ├── pyproject.toml
-│   └── uv.lock
-│
-└── docker-compose.yml
-```
+- `GET /health`: public container health check (contains no user info).
+- `GET /users/{user_id}`: retrieve a user.
+- `POST /users/`: create a user; JSON with `username`, `expire_days`, `data_limit_gb`.
+- `PUT /users/{user_id}`: extend/update quota; JSON with `expire_days` and/or `traffic_gb`.
 
-Both components are independently packaged Python services with their own dependency definitions and Dockerfiles.
+All `/users` endpoints require `X-Internal-Token`. The upstream Marzban URL may end in `/api` or specify the origin directly.
 
-## Tech stack
-
-| Area | Technology | Role |
-|---|---|---|
-| Backend | Python 3.12+ | service and integration logic |
-| API | FastAPI | HTTP boundary between bot and backend |
-| Validation | Pydantic | request schemas |
-| External I/O | HTTPX | async Marzban API communication |
-| Telegram | Aiogram 3 | bot interface |
-| Bot networking | aiohttp | backend communication |
-| Runtime | Uvicorn | ASGI server |
-| Packaging | uv | dependency locking |
-| Deployment | Docker / Compose | multi-service environment |
-
-## API surface
-
-```http
-POST /users/
-GET  /users/{user_id}
-PUT  /users/{user_id}
-```
-
-The API is responsible for translating application-level user operations into calls to Marzban.
-
-## Run with Docker Compose
-
-### 1. Clone
+### Run backend tests (no credentials needed)
 
 ```bash
-git clone https://github.com/Furlos/Marzban_bot.git
-cd Marzban_bot
+cd backend
+python -m pip install -r requirements.txt pytest
+PYTHONPATH=. python -m pytest -q tests
 ```
 
-### 2. Configure credentials
+CI tests route authentication, path parameters, validation, and a mocked integration. No live external Marzban calls occur in CI.
 
-Before running, provide your own values for:
+## Remaining production requirements
 
-```text
-API_TOKEN=<marzban-admin-token>
-API_URL=<marzban-api-url>
-BOT_TOKEN=<telegram-bot-token>
-```
+- Test full Telegram -> internal API -> real Marzban flow using test credentials.
+- Validate user provisioning, subscriptions, expiry and traffic limits.
+- Verify Stars invoice prices and ensure payment **idempotency and durable receipt tracking** before handling paying users. The current bot's payments are a prototype; it has no persistent payment ledger.
+- Add monitoring, admin recovery and appropriate rate limiting for commercial use.
+- Keep the API behind a firewall/reverse proxy if publishing beyond the local Docker host.
 
-The repository's Compose file contains placeholder values — do not commit real credentials.
+## Portfolio value
 
-### 3. Start both services
-
-```bash
-docker compose up --build
-```
-
-The backend is exposed on port `3000`; the Telegram container communicates with it through the Compose service network.
-
-## Engineering ideas demonstrated
-
-- separation between **transport**, **service** and **external integration** layers;
-- asynchronous API communication;
-- schema-based request validation;
-- independently containerized Python services;
-- service-to-service networking with Docker Compose;
-- environment-driven external API configuration;
-- Telegram as a client of a backend service rather than the location of all business logic.
-
-## Current scope
-
-This is a compact backend/integration project rather than a finished production platform. Useful next engineering steps would be automated tests, structured logging, health checks, stronger error mapping for upstream API failures and CI.
-
----
-
-<p align="center">
-  <b>Backend first:</b> Telegram is the interface; the Python service owns the integration boundary.
-</p>
+Demonstrates FastAPI, Aiogram, Pydantic, HTTPX, async requests, Docker Compose, service boundaries, authentication and CI tests. It is not represented as a production-ready billing platform.
