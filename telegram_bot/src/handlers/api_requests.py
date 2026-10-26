@@ -1,106 +1,57 @@
-import aiohttp
+"""Calls to the internal backend. Never log subscription credentials."""
 import asyncio
-import json
-from config import url
 
-async def create_user(username, expire_days, data_limit_gb):
-    api_url = f"{url}/users/"  # Use the URL from config
-    payload = {
-        "username": username,
-        "expire_days": expire_days,
-        "data_limit_gb": data_limit_gb
-    }
+import aiohttp
+from config import internal_api_key, url
 
-    headers = {
-        "Content-Type": "application/json",
-        "accept": "application/json"
-    }
 
-    async with aiohttp.ClientSession() as session:
-        async with session.post(api_url, json=payload, headers=headers) as response:
-            response_text = await response.text()
-
-            try:
-                data = json.loads(response_text)
-                print("Response:", data)
-
-                connection_file = data.get("connection_file")
-                if connection_file:
-                    print("Connection file:", connection_file)
-                else:
-                    print("No connection_file in response")
-
-                print("Full response text:", response_text)
-                return data
-
-            except json.JSONDecodeError:
-                print(response_text)
-                print(f"Status code: {response.status}")
-                return "Server returned non-JSON response"
-async def get_user_by_username(username):
-    api_url = f"{url}/users/(user_id?username={username}"
+async def _request(method: str, path: str, payload: dict | None = None) -> dict:
+    if not internal_api_key:
+        return {"status": 503, "error": "Internal API key not configured", "data": None}
 
     try:
-        async with aiohttp.ClientSession() as session:
-            async with session.get(api_url, headers={"accept": "application/json"}) as response:
-                if response.status != 200:
+        timeout = aiohttp.ClientTimeout(total=20)
+        async with aiohttp.ClientSession(timeout=timeout) as session:
+            async with session.request(
+                method,
+                f"{url}{path}",
+                json=payload,
+                headers={"X-Internal-Token": internal_api_key},
+            ) as response:
+                if response.content_type == "application/json":
+                    result = await response.json()
+                else:
+                    result = None
+                if response.status >= 400:
                     return {
-                        "error": f"API error: {response.status}",
-                        "status": response.status
+                        "status": response.status,
+                        "error": f"Backend returned HTTP {response.status}",
+                        "data": None,
                     }
+                if not isinstance(result, dict):
+                    return {"status": 502, "error": "Unexpected backend response", "data": None}
+                return {"status": response.status, "error": None, "data": result}
+    except (aiohttp.ClientError, asyncio.TimeoutError):
+        return {"status": 503, "error": "Backend unavailable", "data": None}
 
-                try:
-                    data = await response.json()
-                    return {
-                        "status": 200,
-                        "data": data,
-                        "error": None
-                    }
-                except json.JSONDecodeError:
-                    return {
-                        "status": 500,
-                        "error": "Invalid JSON response",
-                        "data": None
-                    }
-    except Exception as e:
-        return {
-            "status": 500,
-            "error": str(e),
-            "data": None
-        }
+
+async def create_user(username, expire_days, data_limit_gb):
+    return await _request(
+        "POST",
+        "/users/",
+        {"username": str(username), "expire_days": expire_days, "data_limit_gb": data_limit_gb},
+    )
+
+
+async def get_user_by_username(username):
+    return await _request("GET", f"/users/{username}")
 
 
 async def update_user(username, traffic_gb=None, expire_days=None, reset_usage=None):
-    api_url = f"{url}/users/(user_id)?username={username}"
-
-    # Only include parameters that are not None
     payload = {}
     if traffic_gb is not None:
         payload["traffic_gb"] = traffic_gb
     if expire_days is not None:
         payload["expire_days"] = expire_days
-    if reset_usage is not None:
-        payload["reset_usage"] = reset_usage
-
-    headers = {
-        "Content-Type": "application/json",
-        "accept": "application/json",
-        "execute": "true"
-    }
-
-    async with aiohttp.ClientSession() as session:
-        async with session.put(api_url, json=payload, headers=headers) as response:
-            print(f"Request URL: {api_url}")
-            print(f"Status code: {response.status}")
-
-            try:
-                response_data = await response.json()
-                print("Response data:")
-                print(response_data)
-                return response_data
-            except Exception as e:
-                error_text = await response.text()
-                print(f"Could not parse JSON: {e}")
-                print("Raw response:")
-                print(error_text)
-                return {"error": str(e), "response_text": error_text}
+    # reset_usage is not implemented by the backend; do not claim to reset counters.
+    return await _request("PUT", f"/users/{username}", payload)
