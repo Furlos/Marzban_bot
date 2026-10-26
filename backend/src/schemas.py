@@ -1,16 +1,13 @@
-from typing import Optional
+"""Request validation for the internal backend."""
+from pydantic import BaseModel, Field
 
-from pydantic import BaseModel
 
-
-# Модели запросов
 class UserCreate(BaseModel):
-    username: str
-    expire_days: int
-    data_limit_gb: int
+    username: str = Field(min_length=1, max_length=64)
+    expire_days: int = Field(ge=1, le=365)
+    data_limit_gb: int = Field(ge=1, le=10000)
 
 
 class UserUpdate(BaseModel):
-    traffic_gb: Optional[int] = None
-    expire_days: Optional[int] = None
-    reset_usage: bool = False  # Всегда Тру, в этом нет смысла
+    traffic_gb: int | None = Field(default=None, ge=0, le=10000)
+    expire_days: int | None = Field(default=None, ge=1, le=365)
